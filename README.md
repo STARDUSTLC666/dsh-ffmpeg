@@ -1,6 +1,9 @@
 [English](README.en.md)
 
-# dsh-ffmpeg
+`# dsh-ffmpeg
+
+![npm version](https://img.shields.io/npm/v/dsh-ffmpeg?label=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dm/dsh-ffmpeg) ![license](https://img.shields.io/npm/l/dsh-ffmpeg) ![stars](https://img.shields.io/github/stars/STARDUSTLC666/dsh-ffmpeg?style=social)
+
 
 DSH（DeepSeek Harness）视频处理工具插件：七个工具覆盖探测、剪辑、拼接、转码、字幕、提取与 GIF 制作，全部由 ffmpeg/ffprobe 完成。
 
@@ -66,3 +69,4 @@ pnpm test       # 构建 + 50 个测试（含真实 ffmpeg 端到端集成，缺
 ## License
 
 MIT
+
