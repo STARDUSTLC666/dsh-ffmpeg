@@ -1,0 +1,18 @@
+# dsh-ffmpeg 组合包补丁：把视频处理工具插件行插入 profile。
+# 本补丁按 id 覆盖；用户应在自己 profile 的 cordis.patch.yml 里覆盖本行的整个
+# config（见 README 的配置示例）。配置缺失时插件仍会加载（依赖 PATH 上的 ffmpeg）。
+#
+# 示例（用户 profile 的 cordis.patch.yml）：
+#   - id: ffmpeg
+#     name: 'dsh-ffmpeg'
+#     config:
+#       # ffmpegPath: C:\tools\ffmpeg\bin\ffmpeg.exe   # 非 PATH 时显式指定
+#       # ffprobePath: C:\tools\ffmpeg\bin\ffprobe.exe
+#       timeoutMs: 300000                                # 单次操作超时（默认 5 分钟）
+#       # overwrite: true                                 # 允许覆盖同名输出（默认自动加后缀）
+#
+- insert:
+    - id: ffmpeg
+      name: 'dsh-ffmpeg'
+      config:
+        timeoutMs: 300000
