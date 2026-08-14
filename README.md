@@ -1,6 +1,8 @@
 [English](README.en.md)
 
-`# dsh-ffmpeg
+# dsh-ffmpeg
+
+> **你的 agent 会剪视频了**：探测/剪辑/拼接/转码/字幕/抽帧/GIF，七个工具一条命令。
 
 ![npm version](https://img.shields.io/npm/v/dsh-ffmpeg?label=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dm/dsh-ffmpeg) ![license](https://img.shields.io/npm/l/dsh-ffmpeg) ![stars](https://img.shields.io/github/stars/STARDUSTLC666/dsh-ffmpeg?style=social)
 
