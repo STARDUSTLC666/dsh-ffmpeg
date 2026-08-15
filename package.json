@@ -49,7 +49,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/STARDUSTLC666/dsh-ffmpeg"
+    "url": "git+https://github.com/STARDUSTLC666/dsh-ffmpeg.git"
   },
   "bugs": {
     "url": "https://github.com/STARDUSTLC666/dsh-ffmpeg/issues"
