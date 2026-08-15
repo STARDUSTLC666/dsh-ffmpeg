@@ -2,6 +2,8 @@
 
 # dsh-ffmpeg
 
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+
 DSH (DeepSeek Harness) video-processing plugin: seven tools covering probing, cutting, concatenation, transcoding, subtitles, extraction and GIF creation — all powered by ffmpeg/ffprobe.
 
 ## Installation

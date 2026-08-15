@@ -6,6 +6,8 @@
 
 ![npm version](https://img.shields.io/npm/v/dsh-ffmpeg?label=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dm/dsh-ffmpeg) ![license](https://img.shields.io/npm/l/dsh-ffmpeg) ![stars](https://img.shields.io/github/stars/STARDUSTLC666/dsh-ffmpeg?style=social)
 
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+
 
 DSH（DeepSeek Harness）视频处理工具插件：七个工具覆盖探测、剪辑、拼接、转码、字幕、提取与 GIF 制作，全部由 ffmpeg/ffprobe 完成。
 
