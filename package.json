@@ -37,7 +37,8 @@
     "plugin",
     "ffmpeg",
     "video",
-    "media"
+    "media",
+    "dsh-plugin"
   ],
   "license": "MIT",
   "engines": {
