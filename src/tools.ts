@@ -6,6 +6,7 @@
  */
 
 import { rmSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import {
@@ -253,7 +254,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       const firstExt = extname(absolute[0]) || '.mp4'
       const output = resolveOutputPath(absolute[0], optionalString(args, 'output'), '.concat', firstExt, cfg.overwrite)
       if (!reencode) {
-        const listPath = join(tmpdir(), 'dsh-ffmpeg-concat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.txt')
+        const listPath = join(tmpdir(), 'dsh-ffmpeg-concat-' + Date.now() + '-' + randomUUID().slice(0, 8) + '.txt')
         writeFileSync(listPath, concatListContent(absolute), 'utf8')
         try {
           await runChecked(runner, concatArgs(cfg.ffmpegPath, { inputs: absolute, listFilePath: listPath, output, overwrite: cfg.overwrite, reencode: false }), timeout, 'ffmpeg 拼接')
