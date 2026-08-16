@@ -153,6 +153,17 @@ test('ffmpeg_gif：两遍执行、参数钳制、调色板清理', async () => {
   assert.equal(existsSync(value.output + '.palette.png'), false)
 })
 
+test('ffmpeg_extract：frames 显式输出自动补 %03d 与扩展名', async () => {
+  const runner = makeRunner()
+  const extract = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_extract')
+  const plain = await extract.execute({ input, what: 'frames', output: join(dir, 'frames') })
+  assert.equal(plain.output, join(dir, 'frames-%03d.png'))
+  const ext = await extract.execute({ input, what: 'frames', output: join(dir, 'frames.png') })
+  assert.equal(ext.output, join(dir, 'frames-%03d.png'))
+  const pattern = await extract.execute({ input, what: 'frames', output: join(dir, 'seq-%04d.png') })
+  assert.equal(pattern.output, join(dir, 'seq-%04d.png'))
+})
+
 test('超时透传给 runner', async () => {
   const runner = makeRunner()
   const cut = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_cut')

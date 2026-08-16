@@ -63,13 +63,13 @@ export function createSubprocessRunner(spawn: SubprocessSpawnLike, graceMs: numb
           graceMs,
           signal: controller.signal,
         })
+        const outcome = await handle.done
+        const stdout = handle.collected.stdout?.readFrom(0).text ?? ''
+        const stderr = handle.collected.stderr?.readFrom(0).text ?? ''
+        return { exitCode: outcome.exitCode, signal: outcome.signal, stdout, stderr }
       } finally {
         clearTimeout(timer)
       }
-      const outcome = await handle.done
-      const stdout = handle.collected.stdout?.readFrom(0).text ?? ''
-      const stderr = handle.collected.stderr?.readFrom(0).text ?? ''
-      return { exitCode: outcome.exitCode, signal: outcome.signal, stdout, stderr }
     },
   }
 }

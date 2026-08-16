@@ -139,6 +139,7 @@ const probeSchema = {
     sizeBytes: { type: 'number' },
     bitrate: { type: 'number' },
     video: videoStreamSchema,
+    videos: { type: 'array', items: videoStreamSchema },
     audio: { type: 'array', items: audioStreamSchema },
     subtitles: { type: 'array', items: subtitleStreamSchema },
   },
@@ -172,10 +173,13 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       schema: probeSchema,
       render: buildTextRenderer((_args, value) => {
         const rec = asRecord(value)
-        const video = asRecord(rec.video)
+        const videos = Array.isArray(rec.videos) ? rec.videos : []
+        const video = videos.length > 0 ? asRecord(videos[0]) : asRecord(rec.video)
         const lines = ['媒体信息（' + rec.input + '）：']
         lines.push('- 容器：' + rec.formatName + '，时长：' + (rec.durationSeconds ?? '未知') + ' 秒，大小：' + (rec.sizeBytes ?? '未知') + ' 字节')
-        if (rec.video !== null && rec.video !== undefined) lines.push('- 视频：' + video.codec + ' ' + video.width + 'x' + video.height + '，帧率：' + (video.fps ?? '未知'))
+        if (videos.length > 0) {
+          lines.push('- 视频流 ' + videos.length + ' 个；主视频：' + video.codec + ' ' + video.width + 'x' + video.height + '，帧率：' + (video.fps ?? '未知'))
+        }
         lines.push('- 音频流：' + (Array.isArray(rec.audio) ? rec.audio.length : 0) + ' 个，字幕流：' + (Array.isArray(rec.subtitles) ? rec.subtitles.length : 0) + ' 个')
         return lines
       }),
@@ -385,7 +389,12 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       } else {
         const explicit = optionalString(args, 'output')
         if (explicit !== undefined) {
-          output = explicit.includes('%') ? explicit : explicit.replace(/(\.[^.]+)$/, '-%03d$1')
+          if (explicit.includes('%')) {
+            output = explicit
+          } else {
+            const explicitExt = extname(explicit)
+            output = explicitExt === '' ? explicit + '-%03d.png' : explicit.slice(0, -explicitExt.length) + '-%03d' + explicitExt
+          }
         } else {
           output = join(dirname(input), sanitizeName(basename(input, extname(input))) + '-%03d.png')
         }

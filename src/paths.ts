@@ -3,7 +3,7 @@
  *
  * @module dsh-ffmpeg/paths
  */
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 
 /** 校验输入文件存在且是文件；返回绝对路径。 */
@@ -11,6 +11,9 @@ export function assertInputFile(input: string): string {
   const absolute = resolve(input)
   if (!existsSync(absolute)) {
     throw new Error('输入文件不存在：' + input)
+  }
+  if (!statSync(absolute).isFile()) {
+    throw new Error('输入路径不是文件：' + input)
   }
   return absolute
 }

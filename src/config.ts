@@ -31,10 +31,10 @@ const DEFAULT_GRACE_MS = 15000
  * @param config - 插件行配置（可能为 undefined/null）。
  * @throws 配置值非法时抛出中文错误。
  */
-export function resolveConfig(config: FfmpegConfig | undefined | null): ResolvedFfmpegConfig {
+export function resolveConfig(config: FfmpegConfig | undefined | null, env: NodeJS.ProcessEnv = process.env): ResolvedFfmpegConfig {
   const cfg = config ?? {}
-  const ffmpegPath = typeof cfg.ffmpegPath === 'string' && cfg.ffmpegPath.trim() !== '' ? cfg.ffmpegPath.trim() : 'ffmpeg'
-  const ffprobePath = typeof cfg.ffprobePath === 'string' && cfg.ffprobePath.trim() !== '' ? cfg.ffprobePath.trim() : 'ffprobe'
+  const ffmpegPath = typeof cfg.ffmpegPath === 'string' && cfg.ffmpegPath.trim() !== '' ? cfg.ffmpegPath.trim() : (env.DSH_FFMPEG_PATH?.trim() || 'ffmpeg')
+  const ffprobePath = typeof cfg.ffprobePath === 'string' && cfg.ffprobePath.trim() !== '' ? cfg.ffprobePath.trim() : (env.DSH_FFPROBE_PATH?.trim() || 'ffprobe')
   let timeoutMs = DEFAULT_TIMEOUT_MS
   if (cfg.timeoutMs !== undefined) {
     if (typeof cfg.timeoutMs !== 'number' || !Number.isFinite(cfg.timeoutMs) || cfg.timeoutMs <= 0) {

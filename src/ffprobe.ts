@@ -34,7 +34,10 @@ export interface MediaInfo {
   durationSeconds: number | null
   sizeBytes: number | null
   bitrate: number | null
+  /** 第一个视频流（保持旧字段兼容）。 */
   video: VideoStreamInfo | null
+  /** 全部视频流（多机位/多角度视频可完整枚举）。 */
+  videos: VideoStreamInfo[]
   audio: AudioStreamInfo[]
   subtitles: SubtitleStreamInfo[]
 }
@@ -85,20 +88,20 @@ export function parseProbeJson(text: string): MediaInfo {
   const root = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
   const format = (typeof root.format === 'object' && root.format !== null ? root.format : {}) as Record<string, unknown>
   const streams = Array.isArray(root.streams) ? root.streams as Array<Record<string, unknown>> : []
-  let video: VideoStreamInfo | null = null
+  const videos: VideoStreamInfo[] = []
   const audio: AudioStreamInfo[] = []
   const subtitles: SubtitleStreamInfo[] = []
   for (const stream of streams) {
     const codecType = str(stream.codec_type)
-    if (codecType === 'video' && video === null) {
-      video = {
+    if (codecType === 'video') {
+      videos.push({
         width: num(stream.width) ?? 0,
         height: num(stream.height) ?? 0,
         fps: parseFps(stream.avg_frame_rate) ?? parseFps(stream.r_frame_rate),
         codec: str(stream.codec_name),
         durationSeconds: num(stream.duration) ?? null,
         bitrate: num(stream.bit_rate) ?? null,
-      }
+      })
     } else if (codecType === 'audio') {
       audio.push({
         codec: str(stream.codec_name),
@@ -119,7 +122,8 @@ export function parseProbeJson(text: string): MediaInfo {
     durationSeconds: num(format.duration) ?? null,
     sizeBytes: num(format.size) ?? null,
     bitrate: num(format.bit_rate) ?? null,
-    video,
+    video: videos[0] ?? null,
+    videos,
     audio,
     subtitles,
   }

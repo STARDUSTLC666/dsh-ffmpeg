@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { resolveOutputPath, sanitizeName, assertInputFile } from '../lib/index.js'
@@ -31,8 +31,11 @@ test('sanitizeName 清洗危险字符', () => {
   assert.equal(sanitizeName('   '), 'output')
 })
 
-test('assertInputFile 缺文件抛中文错误', () => {
+test('assertInputFile 缺文件/目录抛中文错误', () => {
   assert.throws(() => assertInputFile(join(dir, 'missing.mp4')), /输入文件不存在/)
+  const subdir = join(dir, 'folder.mp4')
+  mkdirSync(subdir)
+  assert.throws(() => assertInputFile(subdir), /不是文件/)
 })
 
 test('cleanup', () => { rmSync(dir, { recursive: true, force: true }) })

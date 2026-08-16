@@ -27,6 +27,20 @@ test('解析完整 ffprobe JSON', () => {
   assert.equal(media.subtitles[0].language, 'eng')
 })
 
+test('多视频流全部进入 videos，video 保留第一个', () => {
+  const media = parseProbeJson(JSON.stringify({
+    format: { format_name: 'mov' },
+    streams: [
+      { codec_type: 'video', codec_name: 'h264', width: 1920, height: 1080 },
+      { codec_type: 'video', codec_name: 'hevc', width: 640, height: 360 },
+      { codec_type: 'audio', codec_name: 'aac' },
+    ],
+  }))
+  assert.equal(media.videos.length, 2)
+  assert.equal(media.video.codec, 'h264')
+  assert.equal(media.videos[1].codec, 'hevc')
+})
+
 test('N/A 与缺失字段归一化为 null/默认', () => {
   const media = parseProbeJson(JSON.stringify({ format: { duration: 'N/A' }, streams: [{ codec_type: 'video', codec_name: 'mpeg4' }] }))
   assert.equal(media.durationSeconds, null)
