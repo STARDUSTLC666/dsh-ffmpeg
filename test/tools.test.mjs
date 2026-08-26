@@ -28,7 +28,7 @@ const cfg = resolveConfig({ timeoutMs: 120000 })
 
 test('构建 7 个工具且名字正确', () => {
   const names = buildFfmpegTools(cfg, makeRunner()).map((t) => t.name).sort()
-  assert.deepEqual(names, ['ffmpeg_concat', 'ffmpeg_cut', 'ffmpeg_encode', 'ffmpeg_extract', 'ffmpeg_gif', 'ffmpeg_probe', 'ffmpeg_subtitle'])
+  assert.deepEqual(names, ['ffmpeg_concat', 'ffmpeg_cut', 'ffmpeg_encode', 'ffmpeg_extract', 'ffmpeg_frames', 'ffmpeg_gif', 'ffmpeg_health', 'ffmpeg_probe', 'ffmpeg_subtitle'])
 })
 
 test('每个工具的 parameters 是编译好的 object JSON Schema，输出含 render', () => {

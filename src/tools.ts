@@ -1,17 +1,17 @@
 /**
- * 七个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif。
+ * 八个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif / frames。
  * 直接调用 ctx.tools.register 注册【编译好的 JSON Schema】参数与 canonical 输出。
  *
  * @module dsh-ffmpeg/tools
  */
 
-import { rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import {
   concatArgs, concatListContent, cutArgs, ENCODE_PRESETS, encodeArgs,
-  extractArgs, fmtSeconds, gifPaletteArgs, gifUseArgs, probeArgs, subtitleArgs,
+  extractArgs, fmtSeconds, frameAtArgs, gifPaletteArgs, gifUseArgs, probeArgs, subtitleArgs,
   type EncodePreset, type ExtractWhat,
 } from './args.js'
 import { type ResolvedFfmpegConfig } from './config.js'
@@ -134,6 +134,7 @@ const probeSchema = {
   properties: {
     ok: { type: 'boolean' },
     input: { type: 'string' },
+    summary: { type: 'string' },
     formatName: { type: 'string' },
     durationSeconds: { type: 'number' },
     sizeBytes: { type: 'number' },
@@ -150,6 +151,34 @@ const produceSchema = {
   type: 'object',
   properties: { output: { type: 'string' } },
   additionalProperties: true,
+}
+
+// ---------- probe 摘要 ----------
+
+/** 码率人类可读。 */
+function formatBitrate(bps: number | null): string {
+  if (bps === null) return '码率未知'
+  if (bps >= 1000000) return (bps / 1000000).toFixed(2) + ' Mbps'
+  return Math.round(bps / 1000) + ' kbps'
+}
+
+/** 生成一行人类可读的媒体摘要：容器、时长、主视频、帧率、码率、体积。 */
+export function buildProbeSummary(media: MediaInfo): string {
+  const parts: string[] = []
+  if (media.formatName !== '') parts.push(media.formatName)
+  if (media.durationSeconds !== null) parts.push(fmtSeconds(media.durationSeconds))
+  if (media.video !== null) {
+    const v = media.video
+    parts.push((v.codec !== '' ? v.codec + ' ' : '') + v.width + 'x' + v.height)
+    if (v.fps !== null) parts.push(Math.round(v.fps * 100) / 100 + ' fps')
+  }
+  parts.push(formatBitrate(media.bitrate))
+  if (media.sizeBytes !== null) {
+    const mb = media.sizeBytes / 1024 / 1024
+    parts.push(mb >= 1 ? mb.toFixed(1) + ' MB' : Math.round(media.sizeBytes / 1024) + ' KB')
+  }
+  parts.push('音频流 ' + media.audio.length + ' / 字幕流 ' + media.subtitles.length)
+  return parts.join('，')
 }
 
 // ---------- 工具构建 ----------
@@ -176,6 +205,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         const videos = Array.isArray(rec.videos) ? rec.videos : []
         const video = videos.length > 0 ? asRecord(videos[0]) : asRecord(rec.video)
         const lines = ['媒体信息（' + rec.input + '）：']
+        if (typeof rec.summary === 'string' && rec.summary !== '') lines.push('- 摘要：' + rec.summary)
         lines.push('- 容器：' + rec.formatName + '，时长：' + (rec.durationSeconds ?? '未知') + ' 秒，大小：' + (rec.sizeBytes ?? '未知') + ' 字节')
         if (videos.length > 0) {
           lines.push('- 视频流 ' + videos.length + ' 个；主视频：' + video.codec + ' ' + video.width + 'x' + video.height + '，帧率：' + (video.fps ?? '未知'))
@@ -189,7 +219,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       const input = assertInputFile(requiredString(args, 'input', '输入文件'))
       const result = await runChecked(runner, probeArgs(cfg.ffprobePath, input), Math.min(timeout, 60000), 'ffprobe')
       const media: MediaInfo = parseProbeJson(result.stdout)
-      return { ok: true, input, ...media }
+      return { ok: true, input, summary: buildProbeSummary(media), ...media }
     },
     timeoutMs: Math.min(timeout, 60000),
   }
@@ -447,5 +477,97 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
     timeoutMs: timeout,
   }
 
-  return [probe, cut, concat, encode, subtitle, extract, gif]
+  const frames: FfmpegToolDefinition = {
+    name: 'ffmpeg_frames',
+    description: '从视频批量抽帧为图片（PNG/JPG）。两种模式：every（固定秒间隔抽帧，如 every=2 表示每 2 秒一帧，默认 1）或 times（指定时间点列表，如 ["00:00:05","00:01:30"]，最多 20 个）。maxFrames 限制 every 模式的帧数上限（1-500，默认 100）。返回输出目录、文件清单与数量，便于后续视觉模型读图。',
+    parameters: compileParameters({
+      input: { type: 'string', required: true, description: '输入视频（必填）。' },
+      every: { type: 'number', description: '抽帧间隔秒数（与 times 二选一，默认 1）。' },
+      times: { type: 'array', items: { type: 'string' }, description: '时间点列表（与 every 二选一，最多 20 个，秒数或 HH:MM:SS.mmm）。' },
+      maxFrames: { type: 'integer', description: 'every 模式帧数上限 1-500（默认 100）。' },
+      outputDir: { type: 'string', description: '输出目录（可选，默认输入同目录 <文件名>-frames）。' },
+      format: { type: 'string', description: '图片格式：png（默认）或 jpg。' },
+    }),
+    output: {
+      schema: baseSchema,
+      render: buildTextRenderer((_args, value) => {
+        const rec = asRecord(value)
+        return ['抽帧完成：共 ' + rec.count + ' 张，输出目录 ' + rec.outputDir + (rec.mode === 'times' ? '（指定时间点）' : '（每 ' + rec.every + ' 秒一帧）')]
+      }),
+    },
+    async execute(rawArgs: unknown) {
+      const args = asRecord(rawArgs)
+      const input = assertInputFile(requiredString(args, 'input', '输入文件'))
+      const formatRaw = optionalString(args, 'format')?.toLowerCase() ?? 'png'
+      if (formatRaw !== 'png' && formatRaw !== 'jpg' && formatRaw !== 'jpeg') throw new Error('format 只支持 png 或 jpg。')
+      const ext = formatRaw === 'png' ? '.png' : '.jpg'
+      const times = stringArray(args, 'times')
+      const outDir = optionalString(args, 'outputDir') ?? join(dirname(input), sanitizeName(basename(input, extname(input))) + '-frames')
+      mkdirSync(outDir, { recursive: true })
+      if (times.length > 0) {
+        if (times.length > 20) throw new Error('times 最多 20 个时间点（当前 ' + times.length + ' 个）。')
+        let i = 0
+        for (const raw of times) {
+          const at = parseTimeArg(raw)
+          if (at === null) throw new Error('times 里第 ' + (i + 1) + ' 个时间点非法：' + raw + '（请用秒数或 HH:MM:SS.mmm）。')
+          const target = join(outDir, 'frame-' + String(i + 1).padStart(3, '0') + ext)
+          await runChecked(runner, frameAtArgs(cfg.ffmpegPath, { input, time: at, output: target, overwrite: cfg.overwrite }), timeout, 'ffmpeg 定点抽帧')
+          i++
+        }
+      } else {
+        const every = optionalNumber(args, 'every') ?? 1
+        if (every <= 0) throw new Error('every 必须大于 0。')
+        const maxFramesRaw = args.maxFrames
+        const maxFrames = typeof maxFramesRaw === 'number' && Number.isInteger(maxFramesRaw) ? Math.min(500, Math.max(1, maxFramesRaw)) : 100
+        const pattern = join(outDir, 'frame-%03d' + ext)
+        await runChecked(runner, extractArgs(cfg.ffmpegPath, { input, what: 'frames', output: pattern, overwrite: cfg.overwrite, fps: 1 / every, streamIndex: 0, maxFrames }), timeout, 'ffmpeg 抽帧')
+      }
+      const files = readdirSync(outDir).filter((f) => f.startsWith('frame-') && f.endsWith(ext)).sort()
+      const every = optionalNumber(args, 'every') ?? 1
+      return { outputDir: outDir, mode: times.length > 0 ? 'times' : 'every', every: times.length > 0 ? null : every, count: files.length, files: files.slice(0, 200) }
+    },
+    timeoutMs: timeout,
+  }
+
+  const health: FfmpegToolDefinition = {
+    name: 'ffmpeg_health',
+    description: 'dsh-ffmpeg 自检：验证 ffmpeg / ffprobe 可执行文件是否可用（执行 -version）。遇到问题时先运行本工具定位。',
+    parameters: compileParameters({}),
+    output: {
+      schema: baseSchema,
+      render: buildTextRenderer((_args, value) => {
+        const rec = asRecord(value)
+        const checks = Array.isArray(rec.checks) ? rec.checks : []
+        const lines = ['dsh-ffmpeg 自检' + (rec.ok === true ? '：正常。' : '：发现问题。')]
+        for (const item of checks) {
+          const c = asRecord(item)
+          lines.push('- ' + c.name + '：' + (c.ok === true ? '✅ ' + String(c.version ?? '') : '❌ ' + String(c.detail ?? '')))
+        }
+        return lines
+      }),
+    },
+    async execute() {
+      const checks: Array<Record<string, unknown>> = []
+      let ok = true
+      for (const [label, bin] of [['ffmpeg', cfg.ffmpegPath], ['ffprobe', cfg.ffprobePath]] as const) {
+        try {
+          const result = await runner.run([bin, '-version'], { timeoutMs: 15000 })
+          const firstLine = result.stdout.split(/\r?\n/)[0]?.trim() ?? ''
+          if (result.exitCode === 0) {
+            checks.push({ name: label, ok: true, path: bin, version: firstLine })
+          } else {
+            ok = false
+            checks.push({ name: label, ok: false, path: bin, detail: '退出码 ' + String(result.exitCode) + '：' + firstLine })
+          }
+        } catch (error) {
+          ok = false
+          checks.push({ name: label, ok: false, path: bin, detail: error instanceof Error ? error.message : String(error) })
+        }
+      }
+      return { ok, plugin: 'dsh-ffmpeg', checks }
+    },
+    timeoutMs: 30000,
+  }
+
+  return [probe, cut, concat, encode, subtitle, extract, gif, frames, health]
 }

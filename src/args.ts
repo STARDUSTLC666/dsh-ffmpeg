@@ -130,6 +130,7 @@ export interface ExtractSpec {
   duration?: number
   fps?: number
   streamIndex: number
+  maxFrames?: number
 }
 
 /** 提取：音频（拷贝）/ 抽帧序列 / 单帧 / 字幕流。 */
@@ -151,8 +152,15 @@ export function extractArgs(ffmpeg: string, spec: ExtractSpec): string[] {
   const parts = [ffmpeg, flag, '-i', spec.input]
   if (spec.start !== undefined) parts.push('-ss', fmtSeconds(spec.start))
   if (spec.duration !== undefined) parts.push('-t', fmtSeconds(spec.duration))
+  if (spec.maxFrames !== undefined) parts.push('-frames:v', String(spec.maxFrames))
   parts.push('-vf', 'fps=' + (spec.fps ?? 1), spec.output)
   return parts
+}
+
+/** 定点抽帧：在指定时间点取一帧。 */
+export function frameAtArgs(ffmpeg: string, spec: { input: string; time: number; output: string; overwrite: boolean }): string[] {
+  const flag = overwriteFlag(spec.overwrite)
+  return [ffmpeg, flag, '-ss', fmtSeconds(spec.time), '-i', spec.input, '-frames:v', '1', spec.output]
 }
 
 export interface GifSpec {
