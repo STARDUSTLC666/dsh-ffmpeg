@@ -11,6 +11,10 @@
 
 DSH（DeepSeek Harness）视频处理工具插件：七个工具覆盖探测、剪辑、拼接、转码、字幕、提取与 GIF 制作，全部由 ffmpeg/ffprobe 完成。
 
+## 兼容性
+
+在 `@deepseek-ai/dsh@0.1.1-rc.2` 上验证（2026-08-26）。遵循 cordis 组合包补丁模型（`cordis.patch.yml` + `dsh.bundle.patch`），运行时不 import 任何 `@deepseek-ai/*` 内部模块。
+
 ## 安装
 
 ```bash
@@ -18,6 +22,15 @@ dsh plugin --profile web add dsh-ffmpeg
 ```
 
 需要本机已安装 ffmpeg（`ffmpeg -version` 能出结果即可）；不在 PATH 上时可用 `ffmpegPath`/`ffprobePath` 显式指定，或设置环境变量 `DSH_FFMPEG_PATH` / `DSH_FFPROBE_PATH`。
+
+## 卸载
+
+```bash
+dsh plugin --profile web remove dsh-ffmpeg
+```
+
+卸载后重启 Web 服务。如需彻底清理，可再手动删除自己 profile `cordis.patch.yml` 中覆盖的插件行。
+
 
 ## 配置
 
@@ -73,4 +86,3 @@ pnpm test       # 构建 + 57 个测试（含真实 ffmpeg 端到端集成，缺
 ## License
 
 MIT
-
