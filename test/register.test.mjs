@@ -39,10 +39,10 @@ test('inject 声明 subprocess 与 tools', () => {
   assert.deepEqual(inject, ['subprocess', 'tools'])
 })
 
-test('apply 注册 9 个工具', () => {
+test('apply 注册 10 个工具', () => {
   const { ctx, registered } = makeFakeCtx()
   apply(ctx, {})
-  assert.equal(registered.length, 9)
+  assert.equal(registered.length, 10)
 })
 
 test('apply 在配置缺失/非法时不抛，仅告警', () => {
@@ -50,13 +50,13 @@ test('apply 在配置缺失/非法时不抛，仅告警', () => {
   assert.doesNotThrow(() => apply(first.ctx, {}))
   const second = makeFakeCtx()
   assert.doesNotThrow(() => apply(second.ctx, { timeoutMs: -5 }))
-  assert.equal(second.registered.length, 9)
+  assert.equal(second.registered.length, 10)
 })
 
 test('dispose 触发时卸载全部工具', () => {
   const { ctx, registered, listeners } = makeFakeCtx()
   apply(ctx, {})
-  assert.equal(registered.length, 9)
+  assert.equal(registered.length, 10)
   for (const listener of listeners.dispose ?? []) listener()
   assert.equal(registered.length, 0)
 })

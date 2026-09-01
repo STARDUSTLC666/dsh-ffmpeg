@@ -1,5 +1,5 @@
 /**
- * 八个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif / frames。
+ * 九个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif / frames / adjust。
  * 直接调用 ctx.tools.register 注册【编译好的 JSON Schema】参数与 canonical 输出。
  *
  * @module dsh-ffmpeg/tools

@@ -2,14 +2,14 @@
 
 # dsh-ffmpeg
 
-> **你的 agent 会剪视频了**：探测/剪辑/拼接/转码/字幕/抽帧/GIF，七个工具一条命令。
+> **你的 agent 会剪视频了**：探测/剪辑/拼接/转码/字幕/抽帧/GIF/变速旋转调音，十个工具一条命令。
 
 ![npm version](https://img.shields.io/npm/v/dsh-ffmpeg?label=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dm/dsh-ffmpeg) ![license](https://img.shields.io/npm/l/dsh-ffmpeg) ![stars](https://img.shields.io/github/stars/STARDUSTLC666/dsh-ffmpeg?style=social)
 
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
 
-DSH（DeepSeek Harness）视频处理工具插件：七个工具覆盖探测、剪辑、拼接、转码、字幕、提取与 GIF 制作，全部由 ffmpeg/ffprobe 完成。
+DSH（DeepSeek Harness）视频处理工具插件：十个工具：探测、剪辑、拼接、转码、字幕、提取、GIF、抽帧、调整（变速/音量/静音/旋转）与自检，全部由 ffmpeg/ffprobe 完成。
 
 ## 兼容性
 
@@ -57,6 +57,9 @@ dsh plugin --profile web remove dsh-ffmpeg
 | `ffmpeg_subtitle` | 字幕烧录（SRT/ASS 硬字幕） | `input`+`subtitle` 必填 |
 | `ffmpeg_extract` | 提取音轨（m4a）/ 抽帧序列 / 单帧 / 字幕流 | `input`+`what` 必填 |
 | `ffmpeg_gif` | 视频转高质量 GIF（两遍调色板） | `input` 必填；`fps`/`width`/`duration` 可选 |
+| `ffmpeg_frames` | 批量抽帧给视觉模型读图（定间隔或指定时间点，PNG/JPG） | `input` 必填；`every`/`times` 二选一 |
+| `ffmpeg_adjust` | 变速（音视频同步）/ 音量 / 静音 / 旋转（竖横屏互转），可组合 | `input` 必填；`speed`/`volume`/`mute`/`rotate` 至少一个 |
+| `ffmpeg_health` | 自检 ffmpeg / ffprobe 可执行文件 | 无 |
 
 ### 示例
 

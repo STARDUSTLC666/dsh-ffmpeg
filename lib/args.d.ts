@@ -87,3 +87,29 @@ export interface GifSpec {
 export declare function gifPaletteArgs(ffmpeg: string, spec: GifSpec): string[];
 /** GIF 第二遍：paletteuse 合成。 */
 export declare function gifUseArgs(ffmpeg: string, spec: GifSpec): string[];
+export type RotateDeg = 90 | 180 | 270;
+export interface AdjustSpec {
+    input: string;
+    output: string;
+    overwrite: boolean;
+    /** 倍速：>1 加速，<1 减速（0.1-100）。 */
+    speed?: number;
+    /** 音量：倍数（如 1.5 / 0.6）或分贝（如 -3dB）。 */
+    volume?: string;
+    mute?: boolean;
+    rotate?: RotateDeg;
+    /** 输入是否含音频流（probe 结果），决定是否构建音频滤镜。 */
+    hasAudio: boolean;
+}
+/**
+ * atempo 单滤镜只接受约 [0.5, 100]，超出范围用多个 atempo 级联
+ * （0.25 → atempo=0.5,atempo=0.5）。
+ */
+export declare function atempoChain(speed: number): string;
+/** 顺时针旋转滤镜：90/270 用 transpose，180 用双翻转。 */
+export declare function rotateFilter(deg: RotateDeg): string;
+/**
+ * 调整：变速（视频 setpts + 音频 atempo）、音量、静音、旋转。
+ * 只静音/调音量（无变速旋转）时视频走流拷贝；动了画面就重编码。
+ */
+export declare function adjustArgs(ffmpeg: string, spec: AdjustSpec): string[];

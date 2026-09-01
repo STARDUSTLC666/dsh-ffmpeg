@@ -185,3 +185,78 @@ export function gifUseArgs(ffmpeg: string, spec: GifSpec): string[] {
   const filter = 'fps=' + spec.fps + ',scale=' + spec.width + ':-1:flags=lanczos[x];[x][1:v]paletteuse'
   return [ffmpeg, overwriteFlag(spec.overwrite), '-i', spec.input, '-ss', fmtSeconds(spec.start), '-t', fmtSeconds(spec.duration), '-i', spec.palettePath, '-filter_complex', filter, spec.output]
 }
+
+export type RotateDeg = 90 | 180 | 270
+
+export interface AdjustSpec {
+  input: string
+  output: string
+  overwrite: boolean
+  /** 倍速：>1 加速，<1 减速（0.1-100）。 */
+  speed?: number
+  /** 音量：倍数（如 1.5 / 0.6）或分贝（如 -3dB）。 */
+  volume?: string
+  mute?: boolean
+  rotate?: RotateDeg
+  /** 输入是否含音频流（probe 结果），决定是否构建音频滤镜。 */
+  hasAudio: boolean
+}
+
+/**
+ * atempo 单滤镜只接受约 [0.5, 100]，超出范围用多个 atempo 级联
+ * （0.25 → atempo=0.5,atempo=0.5）。
+ */
+export function atempoChain(speed: number): string {
+  const parts: string[] = []
+  let remaining = speed
+  while (remaining < 0.5) {
+    parts.push('atempo=0.5')
+    remaining /= 0.5
+  }
+  while (remaining > 100) {
+    parts.push('atempo=100')
+    remaining /= 100
+  }
+  parts.push('atempo=' + Number(remaining.toFixed(4)))
+  return parts.join(',')
+}
+
+/** 顺时针旋转滤镜：90/270 用 transpose，180 用双翻转。 */
+export function rotateFilter(deg: RotateDeg): string {
+  if (deg === 90) return 'transpose=1'
+  if (deg === 270) return 'transpose=2'
+  return 'hflip,vflip'
+}
+
+/**
+ * 调整：变速（视频 setpts + 音频 atempo）、音量、静音、旋转。
+ * 只静音/调音量（无变速旋转）时视频走流拷贝；动了画面就重编码。
+ */
+export function adjustArgs(ffmpeg: string, spec: AdjustSpec): string[] {
+  const parts: string[] = [ffmpeg, overwriteFlag(spec.overwrite), '-i', spec.input]
+  const vf: string[] = []
+  const af: string[] = []
+  const audioUsable = spec.hasAudio && spec.mute !== true
+  if (spec.speed !== undefined) {
+    vf.push('setpts=PTS/' + spec.speed)
+    if (audioUsable) af.push(atempoChain(spec.speed))
+  }
+  if (spec.volume !== undefined && audioUsable) af.push('volume=' + spec.volume)
+  if (spec.rotate !== undefined) vf.push(rotateFilter(spec.rotate))
+  if (vf.length > 0) parts.push('-vf', vf.join(','))
+  if (af.length > 0) parts.push('-af', af.join(','))
+  if (vf.length > 0) {
+    parts.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p')
+  } else {
+    parts.push('-c:v', 'copy')
+  }
+  if (spec.mute === true || !spec.hasAudio) {
+    parts.push('-an')
+  } else if (af.length > 0) {
+    parts.push('-c:a', 'aac', '-b:a', '192k')
+  } else {
+    parts.push('-c:a', 'copy')
+  }
+  parts.push('-movflags', '+faststart', spec.output)
+  return parts
+}

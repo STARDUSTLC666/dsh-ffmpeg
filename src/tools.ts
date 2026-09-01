@@ -1,5 +1,5 @@
 /**
- * 八个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif / frames。
+ * 九个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif / frames / adjust。
  * 直接调用 ctx.tools.register 注册【编译好的 JSON Schema】参数与 canonical 输出。
  *
  * @module dsh-ffmpeg/tools
@@ -10,9 +10,9 @@ import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import {
-  concatArgs, concatListContent, cutArgs, ENCODE_PRESETS, encodeArgs,
+  adjustArgs, concatArgs, concatListContent, cutArgs, ENCODE_PRESETS, encodeArgs,
   extractArgs, fmtSeconds, frameAtArgs, gifPaletteArgs, gifUseArgs, probeArgs, subtitleArgs,
-  type EncodePreset, type ExtractWhat,
+  type EncodePreset, type ExtractWhat, type RotateDeg,
 } from './args.js'
 import { type ResolvedFfmpegConfig } from './config.js'
 import { type ProcessRunner, type RunResult } from './exec.js'
@@ -529,6 +529,59 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
     timeoutMs: timeout,
   }
 
+  const adjust: FfmpegToolDefinition = {
+    name: 'ffmpeg_adjust',
+    description: '调整媒体：变速（speed 倍率，>1 加速 <1 减速，音视频同步变速）、音量（volume 倍数如 1.5 或分贝如 -3dB）、静音（mute）、顺时针旋转（rotate 90/180/270，竖横屏互转）。可组合使用。只静音/调音量时视频走流拷贝（快）；变速/旋转会重编码。四个操作至少给一个。',
+    parameters: compileParameters({
+      input: { type: 'string', required: true, description: '输入文件（必填）。' },
+      speed: { type: 'number', description: '倍速 0.1-100：2 为两倍速，0.5 为半速（可选）。' },
+      volume: { type: 'string', description: '音量：倍数如 1.5 / 0.6，或分贝如 -3dB / +2dB（可选）。' },
+      mute: { type: 'boolean', description: 'true 时移除音轨（可选）。' },
+      rotate: { type: 'integer', description: '顺时针旋转角度：90 / 180 / 270（可选）。' },
+      output: { type: 'string', description: '输出路径（可选，默认输入同目录加 .adjust 后缀）。' },
+    }),
+    output: {
+      schema: produceSchema,
+      render: buildTextRenderer((_args, value) => {
+        const rec = asRecord(value)
+        const ops = Array.isArray(rec.ops) ? (rec.ops as string[]).join('，') : ''
+        return ['调整完成：' + rec.output + '（' + ops + '）']
+      }),
+    },
+    async execute(rawArgs: unknown) {
+      const args = asRecord(rawArgs)
+      const input = assertInputFile(requiredString(args, 'input', '输入文件'))
+      const speed = optionalNumber(args, 'speed')
+      if (speed !== undefined && (speed < 0.1 || speed > 100)) throw new Error('speed 必须在 0.1-100 之间（当前：' + speed + '）。')
+      const volume = optionalString(args, 'volume')
+      if (volume !== undefined && !/^\d+(\.\d+)?$|^-?\d+(\.\d+)?dB$/.test(volume)) {
+        throw new Error('volume 格式必须是倍数（如 1.5）或分贝（如 -3dB）。')
+      }
+      const mute = args.mute === true
+      let rotate: RotateDeg | undefined
+      const rotateRaw = args.rotate
+      if (rotateRaw !== undefined) {
+        if (rotateRaw !== 90 && rotateRaw !== 180 && rotateRaw !== 270) throw new Error('rotate 只支持 90 / 180 / 270。')
+        rotate = rotateRaw
+      }
+      if (speed === undefined && volume === undefined && !mute && rotate === undefined) {
+        throw new Error('speed / volume / mute / rotate 至少提供一个。')
+      }
+      // 先探测：确认有没有音轨，避免对无声文件构建音频滤镜报错
+      const probeResult = await runChecked(runner, probeArgs(cfg.ffprobePath, input), Math.min(timeout, 60000), 'ffprobe')
+      const hasAudio = parseProbeJson(probeResult.stdout).audio.length > 0
+      const output = resolveOutputPath(input, optionalString(args, 'output'), '.adjust', extname(input) || '.mp4', cfg.overwrite)
+      await runChecked(runner, adjustArgs(cfg.ffmpegPath, { input, output, overwrite: cfg.overwrite, speed, volume, mute, rotate, hasAudio }), timeout, 'ffmpeg 调整')
+      const ops: string[] = []
+      if (speed !== undefined) ops.push('倍速 x' + speed)
+      if (volume !== undefined) ops.push('音量 ' + volume)
+      if (mute) ops.push('静音')
+      if (rotate !== undefined) ops.push('旋转 ' + rotate + '°')
+      return { output, ops, hasAudio }
+    },
+    timeoutMs: timeout,
+  }
+
   const health: FfmpegToolDefinition = {
     name: 'ffmpeg_health',
     description: 'dsh-ffmpeg 自检：验证 ffmpeg / ffprobe 可执行文件是否可用（执行 -version）。遇到问题时先运行本工具定位。',
@@ -569,5 +622,5 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
     timeoutMs: 30000,
   }
 
-  return [probe, cut, concat, encode, subtitle, extract, gif, frames, health]
+  return [probe, cut, concat, encode, subtitle, extract, gif, frames, adjust, health]
 }
