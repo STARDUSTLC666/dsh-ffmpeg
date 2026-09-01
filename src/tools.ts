@@ -113,13 +113,13 @@ const baseSchema = { type: 'object', additionalProperties: true } as const
 
 const videoStreamSchema = {
   type: 'object',
-  properties: { width: { type: 'number' }, height: { type: 'number' }, fps: { type: 'number' }, codec: { type: 'string' }, durationSeconds: { type: 'number' }, bitrate: { type: 'number' } },
+  properties: { width: { type: 'number' }, height: { type: 'number' }, fps: { oneOf: [{ type: 'number' }, { type: 'null' }] }, codec: { type: 'string' }, durationSeconds: { oneOf: [{ type: 'number' }, { type: 'null' }] }, bitrate: { oneOf: [{ type: 'number' }, { type: 'null' }] } },
   additionalProperties: true,
 }
 
 const audioStreamSchema = {
   type: 'object',
-  properties: { codec: { type: 'string' }, sampleRate: { type: 'number' }, channels: { type: 'number' }, durationSeconds: { type: 'number' } },
+  properties: { codec: { type: 'string' }, sampleRate: { oneOf: [{ type: 'number' }, { type: 'null' }] }, channels: { oneOf: [{ type: 'number' }, { type: 'null' }] }, durationSeconds: { oneOf: [{ type: 'number' }, { type: 'null' }] } },
   additionalProperties: true,
 }
 
@@ -136,9 +136,9 @@ const probeSchema = {
     input: { type: 'string' },
     summary: { type: 'string' },
     formatName: { type: 'string' },
-    durationSeconds: { type: 'number' },
-    sizeBytes: { type: 'number' },
-    bitrate: { type: 'number' },
+    durationSeconds: { oneOf: [{ type: 'number' }, { type: 'null' }] },
+    sizeBytes: { oneOf: [{ type: 'number' }, { type: 'null' }] },
+    bitrate: { oneOf: [{ type: 'number' }, { type: 'null' }] },
     video: videoStreamSchema,
     videos: { type: 'array', items: videoStreamSchema },
     audio: { type: 'array', items: audioStreamSchema },
