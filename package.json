@@ -1,7 +1,7 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.4.1",
-  "description": "DSH 视频处理工具插件：ffmpeg_probe/cut/concat/encode/subtitle/extract/gif/frames/adjust/health 十工具（探测摘要、批量抽帧、GIF、变速/音量/静音/旋转调整），进程走官方 subprocess 服务，超时树级终止、环境变量路径回退与多视频流探测，零运行时依赖（ffmpeg 本体除外）。",
+  "version": "0.4.0",
+  "description": "DSH 视频处理工具插件：ffmpeg_probe/cut/concat/encode/subtitle/extract/gif 七工具，进程走官方 subprocess 服务，超时树级终止、环境变量路径回退与多视频流探测，零运行时依赖（ffmpeg 本体除外）。",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -28,13 +28,6 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
-    },
-    "compatibility": {
-      "dshReleases": {
-        "0.1.0-rc.8": "unknown",
-        "0.1.1-rc.1": "unknown",
-        "0.1.1-rc.2": "compatible"
-      }
     }
   },
   "keywords": [
