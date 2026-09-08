@@ -5,7 +5,7 @@
  * @module dsh-ffmpeg/tools
  */
 
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
@@ -26,6 +26,11 @@ export interface ContentBlock {
   text: string
 }
 
+/** v0.1.2-rc.1 工具执行上下文中本插件需要的公共最小面。 */
+export interface FfmpegToolRunContext {
+  readonly signal: AbortSignal
+}
+
 /** 注册给 ctx.tools.register 的原始工具定义。 */
 export interface FfmpegToolDefinition {
   name: string
@@ -35,7 +40,7 @@ export interface FfmpegToolDefinition {
     schema: Record<string, unknown>
     render(args: unknown, value: unknown): ContentBlock[]
   }
-  execute(args: unknown, exec: unknown): Promise<unknown>
+  execute(args: unknown, exec: FfmpegToolRunContext): Promise<unknown>
   timeoutMs?: number
 }
 
@@ -94,8 +99,8 @@ function stringArray(args: Record<string, unknown>, key: string): string[] {
 }
 
 /** 执行并检查退出码；非零抛中文错误（附 stderr 尾部）。 */
-async function runChecked(runner: ProcessRunner, argv: string[], timeoutMs: number, label: string): Promise<RunResult> {
-  const result = await runner.run(argv, { timeoutMs })
+async function runChecked(runner: ProcessRunner, argv: string[], timeoutMs: number, label: string, signal?: AbortSignal): Promise<RunResult> {
+  const result = await runner.run(argv, { timeoutMs, ...(signal === undefined ? {} : { signal }) })
   if (result.exitCode !== 0) {
     const tail = result.stderr.trim().split(/\r?\n/).slice(-6).join(' | ')
     throw new Error(label + '失败（退出码 ' + String(result.exitCode ?? 'null') + (result.signal ? '，信号 ' + result.signal : '') + '）：' + (tail || '无错误输出'))
@@ -125,7 +130,7 @@ const audioStreamSchema = {
 
 const subtitleStreamSchema = {
   type: 'object',
-  properties: { codec: { type: 'string' }, language: { type: 'string' } },
+  properties: { codec: { type: 'string' }, language: { oneOf: [{ type: 'string' }, { type: 'null' }] } },
   additionalProperties: true,
 }
 
@@ -139,7 +144,7 @@ const probeSchema = {
     durationSeconds: { oneOf: [{ type: 'number' }, { type: 'null' }] },
     sizeBytes: { oneOf: [{ type: 'number' }, { type: 'null' }] },
     bitrate: { oneOf: [{ type: 'number' }, { type: 'null' }] },
-    video: videoStreamSchema,
+    video: { oneOf: [videoStreamSchema, { type: 'null' }] },
     videos: { type: 'array', items: videoStreamSchema },
     audio: { type: 'array', items: audioStreamSchema },
     subtitles: { type: 'array', items: subtitleStreamSchema },
@@ -214,10 +219,10 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return lines
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入文件'))
-      const result = await runChecked(runner, probeArgs(cfg.ffprobePath, input), Math.min(timeout, 60000), 'ffprobe')
+      const result = await runChecked(runner, probeArgs(cfg.ffprobePath, input), Math.min(timeout, 60000), 'ffprobe', exec?.signal)
       const media: MediaInfo = parseProbeJson(result.stdout)
       return { ok: true, input, summary: buildProbeSummary(media), ...media }
     },
@@ -242,7 +247,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['剪辑完成：' + rec.output + '（' + fmtSeconds(Number(rec.duration ?? 0)) + ' 秒' + (rec.reencode === true ? '，已重编码' : '，流拷贝') + '）']
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入文件'))
       const start = optionalTime(args, 'start') ?? 0
@@ -257,7 +262,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       }
       const reencode = args.reencode === true
       const output = resolveOutputPath(input, optionalString(args, 'output'), '.cut', extname(input) || '.mp4', cfg.overwrite)
-      await runChecked(runner, cutArgs(cfg.ffmpegPath, { input, start, duration, output, overwrite: cfg.overwrite, reencode }), timeout, 'ffmpeg 剪辑')
+      await runChecked(runner, cutArgs(cfg.ffmpegPath, { input, start, duration, output, overwrite: cfg.overwrite, reencode }), timeout, 'ffmpeg 剪辑', exec?.signal)
       return { output, start, duration, reencode }
     },
     timeoutMs: timeout,
@@ -278,7 +283,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['拼接完成：' + rec.output + '（' + rec.count + ' 个片段' + (rec.reencode === true ? '，已重编码' : '，流拷贝') + '）']
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const inputs = stringArray(args, 'inputs')
       if (inputs.length < 2) throw new Error('inputs 至少需要 2 个文件（当前 ' + inputs.length + ' 个）。')
@@ -291,12 +296,12 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         const listPath = join(tmpdir(), 'dsh-ffmpeg-concat-' + Date.now() + '-' + randomUUID().slice(0, 8) + '.txt')
         writeFileSync(listPath, concatListContent(absolute), 'utf8')
         try {
-          await runChecked(runner, concatArgs(cfg.ffmpegPath, { inputs: absolute, listFilePath: listPath, output, overwrite: cfg.overwrite, reencode: false }), timeout, 'ffmpeg 拼接')
+          await runChecked(runner, concatArgs(cfg.ffmpegPath, { inputs: absolute, listFilePath: listPath, output, overwrite: cfg.overwrite, reencode: false }), timeout, 'ffmpeg 拼接', exec?.signal)
         } finally {
           rmSync(listPath, { force: true })
         }
       } else {
-        await runChecked(runner, concatArgs(cfg.ffmpegPath, { inputs: absolute, output, overwrite: cfg.overwrite, reencode: true }), timeout, 'ffmpeg 拼接')
+        await runChecked(runner, concatArgs(cfg.ffmpegPath, { inputs: absolute, output, overwrite: cfg.overwrite, reencode: true }), timeout, 'ffmpeg 拼接', exec?.signal)
       }
       return { output, count: absolute.length, reencode }
     },
@@ -321,7 +326,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['转码完成：' + rec.output + '（预设 ' + rec.preset + '，crf=' + rec.crf + '）']
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入文件'))
       const presetRaw = optionalString(args, 'preset') ?? 'bilibili-1080p'
@@ -348,7 +353,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         scale = scaleRaw
       }
       const output = resolveOutputPath(input, optionalString(args, 'output'), '.encoded', extname(input) || '.mp4', cfg.overwrite)
-      await runChecked(runner, encodeArgs(cfg.ffmpegPath, { input, output, preset, crf, fps, scale, overwrite: cfg.overwrite }), timeout, 'ffmpeg 转码')
+      await runChecked(runner, encodeArgs(cfg.ffmpegPath, { input, output, preset, crf, fps, scale, overwrite: cfg.overwrite }), timeout, 'ffmpeg 转码', exec?.signal)
       return { output, preset, crf: crf ?? 'preset', fps: fps ?? null, scale: scale ?? null }
     },
     timeoutMs: timeout,
@@ -369,12 +374,12 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['字幕烧录完成：' + rec.output + '（硬字幕）']
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入视频'))
       const subtitlePath = assertInputFile(requiredString(args, 'subtitle', '字幕文件'))
       const output = resolveOutputPath(input, optionalString(args, 'output'), '.sub', extname(input) || '.mp4', cfg.overwrite)
-      await runChecked(runner, subtitleArgs(cfg.ffmpegPath, { input, subtitle: subtitlePath, output, overwrite: cfg.overwrite }), timeout, 'ffmpeg 字幕')
+      await runChecked(runner, subtitleArgs(cfg.ffmpegPath, { input, subtitle: subtitlePath, output, overwrite: cfg.overwrite }), timeout, 'ffmpeg 字幕', exec?.signal)
       return { output, mode: 'burn' }
     },
     timeoutMs: timeout,
@@ -399,7 +404,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['提取完成（' + rec.what + '）：' + rec.output]
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入文件'))
       const what = requiredString(args, 'what', '提取内容')
@@ -429,7 +434,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
           output = join(dirname(input), sanitizeName(basename(input, extname(input))) + '-%03d.png')
         }
       }
-      await runChecked(runner, extractArgs(cfg.ffmpegPath, { input, what: what as ExtractWhat, output, overwrite: cfg.overwrite, start, duration, fps, streamIndex }), timeout, 'ffmpeg 提取')
+      await runChecked(runner, extractArgs(cfg.ffmpegPath, { input, what: what as ExtractWhat, output, overwrite: cfg.overwrite, start, duration, fps, streamIndex }), timeout, 'ffmpeg 提取', exec?.signal)
       return { output, what, start: start ?? null, duration: duration ?? null, fps: fps ?? null, streamIndex }
     },
     timeoutMs: timeout,
@@ -453,7 +458,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['GIF 生成完成：' + rec.output + '（' + rec.width + 'px，' + rec.fps + 'fps，' + fmtSeconds(Number(rec.duration ?? 0)) + ' 秒）']
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入视频'))
       const start = optionalTime(args, 'start') ?? 0
@@ -464,13 +469,16 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       const widthRaw = args.width
       const width = typeof widthRaw === 'number' && Number.isInteger(widthRaw) ? Math.min(1280, Math.max(64, widthRaw)) : 480
       const output = resolveOutputPath(input, optionalString(args, 'output'), '.gif', '.gif', cfg.overwrite)
-      const palettePath = output + '.palette.png'
+      // 调色板属于内部临时产物，不能借用用户输出旁的可预测路径；否则 -y 与
+      // finally 清理都可能覆盖/删除用户原有的 <output>.palette.png。
+      const paletteDir = mkdtempSync(join(tmpdir(), 'dsh-ffmpeg-gif-'))
+      const palettePath = join(paletteDir, 'palette.png')
       const spec = { input, output, palettePath, overwrite: cfg.overwrite, start, duration, fps, width }
       try {
-        await runChecked(runner, gifPaletteArgs(cfg.ffmpegPath, spec), timeout, 'ffmpeg GIF 调色板')
-        await runChecked(runner, gifUseArgs(cfg.ffmpegPath, spec), timeout, 'ffmpeg GIF 合成')
+        await runChecked(runner, gifPaletteArgs(cfg.ffmpegPath, spec), timeout, 'ffmpeg GIF 调色板', exec?.signal)
+        await runChecked(runner, gifUseArgs(cfg.ffmpegPath, spec), timeout, 'ffmpeg GIF 合成', exec?.signal)
       } finally {
-        rmSync(palettePath, { force: true })
+        rmSync(paletteDir, { recursive: true, force: true })
       }
       return { output, start, duration, fps, width }
     },
@@ -495,7 +503,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['抽帧完成：共 ' + rec.count + ' 张，输出目录 ' + rec.outputDir + (rec.mode === 'times' ? '（指定时间点）' : '（每 ' + rec.every + ' 秒一帧）')]
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入文件'))
       const formatRaw = optionalString(args, 'format')?.toLowerCase() ?? 'png'
@@ -511,7 +519,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
           const at = parseTimeArg(raw)
           if (at === null) throw new Error('times 里第 ' + (i + 1) + ' 个时间点非法：' + raw + '（请用秒数或 HH:MM:SS.mmm）。')
           const target = join(outDir, 'frame-' + String(i + 1).padStart(3, '0') + ext)
-          await runChecked(runner, frameAtArgs(cfg.ffmpegPath, { input, time: at, output: target, overwrite: cfg.overwrite }), timeout, 'ffmpeg 定点抽帧')
+          await runChecked(runner, frameAtArgs(cfg.ffmpegPath, { input, time: at, output: target, overwrite: cfg.overwrite }), timeout, 'ffmpeg 定点抽帧', exec?.signal)
           i++
         }
       } else {
@@ -520,7 +528,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         const maxFramesRaw = args.maxFrames
         const maxFrames = typeof maxFramesRaw === 'number' && Number.isInteger(maxFramesRaw) ? Math.min(500, Math.max(1, maxFramesRaw)) : 100
         const pattern = join(outDir, 'frame-%03d' + ext)
-        await runChecked(runner, extractArgs(cfg.ffmpegPath, { input, what: 'frames', output: pattern, overwrite: cfg.overwrite, fps: 1 / every, streamIndex: 0, maxFrames }), timeout, 'ffmpeg 抽帧')
+        await runChecked(runner, extractArgs(cfg.ffmpegPath, { input, what: 'frames', output: pattern, overwrite: cfg.overwrite, fps: 1 / every, streamIndex: 0, maxFrames }), timeout, 'ffmpeg 抽帧', exec?.signal)
       }
       const files = readdirSync(outDir).filter((f) => f.startsWith('frame-') && f.endsWith(ext)).sort()
       const every = optionalNumber(args, 'every') ?? 1
@@ -548,7 +556,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return ['调整完成：' + rec.output + '（' + ops + '）']
       }),
     },
-    async execute(rawArgs: unknown) {
+    async execute(rawArgs: unknown, exec) {
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入文件'))
       const speed = optionalNumber(args, 'speed')
@@ -568,10 +576,10 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         throw new Error('speed / volume / mute / rotate 至少提供一个。')
       }
       // 先探测：确认有没有音轨，避免对无声文件构建音频滤镜报错
-      const probeResult = await runChecked(runner, probeArgs(cfg.ffprobePath, input), Math.min(timeout, 60000), 'ffprobe')
+      const probeResult = await runChecked(runner, probeArgs(cfg.ffprobePath, input), Math.min(timeout, 60000), 'ffprobe', exec?.signal)
       const hasAudio = parseProbeJson(probeResult.stdout).audio.length > 0
       const output = resolveOutputPath(input, optionalString(args, 'output'), '.adjust', extname(input) || '.mp4', cfg.overwrite)
-      await runChecked(runner, adjustArgs(cfg.ffmpegPath, { input, output, overwrite: cfg.overwrite, speed, volume, mute, rotate, hasAudio }), timeout, 'ffmpeg 调整')
+      await runChecked(runner, adjustArgs(cfg.ffmpegPath, { input, output, overwrite: cfg.overwrite, speed, volume, mute, rotate, hasAudio }), timeout, 'ffmpeg 调整', exec?.signal)
       const ops: string[] = []
       if (speed !== undefined) ops.push('倍速 x' + speed)
       if (volume !== undefined) ops.push('音量 ' + volume)
@@ -599,12 +607,12 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         return lines
       }),
     },
-    async execute() {
+    async execute(_rawArgs: unknown, exec) {
       const checks: Array<Record<string, unknown>> = []
       let ok = true
       for (const [label, bin] of [['ffmpeg', cfg.ffmpegPath], ['ffprobe', cfg.ffprobePath]] as const) {
         try {
-          const result = await runner.run([bin, '-version'], { timeoutMs: 15000 })
+          const result = await runner.run([bin, '-version'], { timeoutMs: 15000, ...(exec?.signal === undefined ? {} : { signal: exec.signal }) })
           const firstLine = result.stdout.split(/\r?\n/)[0]?.trim() ?? ''
           if (result.exitCode === 0) {
             checks.push({ name: label, ok: true, path: bin, version: firstLine })
@@ -613,6 +621,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
             checks.push({ name: label, ok: false, path: bin, detail: '退出码 ' + String(result.exitCode) + '：' + firstLine })
           }
         } catch (error) {
+          if (exec?.signal.aborted === true) throw error
           ok = false
           checks.push({ name: label, ok: false, path: bin, detail: error instanceof Error ? error.message : String(error) })
         }

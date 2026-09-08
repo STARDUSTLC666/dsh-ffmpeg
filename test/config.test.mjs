@@ -19,3 +19,14 @@ test('无配置无环境变量时回退 PATH 命令名', () => {
   assert.equal(cfg.ffmpegPath, 'ffmpeg')
   assert.equal(cfg.ffprobePath, 'ffprobe')
 })
+
+test('无效配置直接报错，不静默回退', () => {
+  assert.throws(() => resolveConfig({ timeoutMs: 0 }), /timeoutMs/)
+  assert.throws(() => resolveConfig({ timeoutMs: 9999 }), /timeoutMs/)
+  assert.throws(() => resolveConfig({ timeoutMs: 7200001 }), /timeoutMs/)
+  assert.throws(() => resolveConfig({ graceMs: -1 }), /graceMs/)
+  assert.throws(() => resolveConfig({ ffmpegPath: '' }), /ffmpegPath/)
+  assert.throws(() => resolveConfig({ ffprobePath: 42 }), /ffprobePath/)
+  assert.throws(() => resolveConfig({ overwrite: 'yes' }), /overwrite/)
+  assert.throws(() => resolveConfig('bad'), /配置必须是对象/)
+})

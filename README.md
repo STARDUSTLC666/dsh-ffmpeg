@@ -13,7 +13,7 @@ DSH（DeepSeek Harness）视频处理工具插件：十个工具：探测、剪�
 
 ## 兼容性
 
-在 `@deepseek-ai/dsh@0.1.2-alpha.2` 上验证（2026-08-31）。遵循 cordis 组合包补丁模型（`cordis.patch.yml` + `dsh.bundle.patch`），运行时不 import 任何 `@deepseek-ai/*` 内部模块。
+已在官方 `@deepseek-ai/dsh@0.1.3-alpha.2` 下验证（2026-09-08）：18 个组件同载，工具注册与调用契约全部通过。遵循 cordis 组合包补丁模型（`cordis.patch.yml` + `dsh.bundle.patch`），运行时不 import 任何 `@deepseek-ai/*` 内部模块。
 
 ## 安装
 
@@ -83,7 +83,7 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 57 个测试（含真实 ffmpeg 端到端集成，缺 ffmpeg 自动跳过）
+pnpm test       # 构建 + 83 个测试（含真实 ffmpeg 端到端集成，缺 ffmpeg 自动跳过）
 ```
 
 ## License

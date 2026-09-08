@@ -45,12 +45,12 @@ test('apply 注册 10 个工具', () => {
   assert.equal(registered.length, 10)
 })
 
-test('apply 在配置缺失/非法时不抛，仅告警', () => {
+test('apply 接受空配置，无效配置直接报错且不注册工具', () => {
   const first = makeFakeCtx()
   assert.doesNotThrow(() => apply(first.ctx, {}))
   const second = makeFakeCtx()
-  assert.doesNotThrow(() => apply(second.ctx, { timeoutMs: -5 }))
-  assert.equal(second.registered.length, 10)
+  assert.throws(() => apply(second.ctx, { timeoutMs: -5 }), /timeoutMs/)
+  assert.equal(second.registered.length, 0)
 })
 
 test('dispose 触发时卸载全部工具', () => {

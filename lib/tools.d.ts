@@ -12,6 +12,10 @@ export interface ContentBlock {
     type: 'text';
     text: string;
 }
+/** v0.1.2-rc.1 工具执行上下文中本插件需要的公共最小面。 */
+export interface FfmpegToolRunContext {
+    readonly signal: AbortSignal;
+}
 /** 注册给 ctx.tools.register 的原始工具定义。 */
 export interface FfmpegToolDefinition {
     name: string;
@@ -25,7 +29,7 @@ export interface FfmpegToolDefinition {
         schema: Record<string, unknown>;
         render(args: unknown, value: unknown): ContentBlock[];
     };
-    execute(args: unknown, exec: unknown): Promise<unknown>;
+    execute(args: unknown, exec: FfmpegToolRunContext): Promise<unknown>;
     timeoutMs?: number;
 }
 /** 生成一行人类可读的媒体摘要：容器、时长、主视频、帧率、码率、体积。 */

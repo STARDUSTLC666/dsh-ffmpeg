@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { buildFfmpegTools, resolveConfig } from '../lib/index.js'
 
 const dir = mkdtempSync(join(tmpdir(), 'dsh-ffmpeg-tools-'))
@@ -17,7 +17,7 @@ function makeRunner(results = []) {
   return {
     calls,
     async run(argv, options) {
-      calls.push({ argv: [...argv], timeoutMs: options?.timeoutMs ?? null })
+      calls.push({ argv: [...argv], timeoutMs: options?.timeoutMs ?? null, signal: options?.signal ?? null })
       const preset = results.shift()
       return { exitCode: preset?.exitCode ?? 0, signal: preset?.signal ?? null, stdout: preset?.stdout ?? '', stderr: preset?.stderr ?? '' }
     },
@@ -39,7 +39,12 @@ test('每个工具的 parameters 是编译好的 object JSON Schema，输出含 
     assert.equal(tool.output.schema.additionalProperties, true)
     assert.equal(typeof tool.output.render, 'function')
     assert.equal(typeof tool.execute, 'function')
+    assert.deepEqual(JSON.parse(JSON.stringify(tool.parameters)), tool.parameters)
+    assert.deepEqual(JSON.parse(JSON.stringify(tool.output.schema)), tool.output.schema)
   }
+  const probe = buildFfmpegTools(cfg, makeRunner()).find((tool) => tool.name === 'ffmpeg_probe')
+  assert.equal(probe.output.schema.properties.video.oneOf[1].type, 'null')
+  assert.equal(probe.output.schema.properties.subtitles.items.properties.language.oneOf[1].type, 'null')
 })
 
 const probeJson = JSON.stringify({
@@ -141,16 +146,45 @@ test('ffmpeg_extract：四种模式命名与参数', async () => {
   await assert.rejects(() => extract.execute({ input, what: 'nope' }), /what 必须是/)
 })
 
-test('ffmpeg_gif：两遍执行、参数钳制、调色板清理', async () => {
+test('ffmpeg_gif：随机临时目录承载调色板，清理时不碰用户同名文件', async () => {
   const runner = makeRunner()
+  let palettePath = ''
+  const originalRun = runner.run.bind(runner)
+  runner.run = async (argv, options) => {
+    if (argv.some((part) => part.includes('palettegen'))) {
+      palettePath = argv.at(-1)
+      assert.equal(existsSync(dirname(palettePath)), true, '执行期间临时目录应存在')
+    }
+    return originalRun(argv, options)
+  }
   const gif = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_gif')
-  const value = await gif.execute({ input, duration: 2, fps: 99, width: 9999 })
+  const explicitOutput = join(dir, 'safe.gif')
+  const userPalette = explicitOutput + '.palette.png'
+  writeFileSync(userPalette, 'user-owned')
+  const value = await gif.execute({ input, output: explicitOutput, duration: 2, fps: 99, width: 9999 })
   assert.equal(runner.calls.length, 2)
   assert.equal(value.fps, 30)
   assert.equal(value.width, 1280)
   assert.ok(runner.calls[0].argv.some((part) => part.includes('palettegen')))
   assert.ok(runner.calls[1].argv.some((part) => part.includes('paletteuse')))
-  assert.equal(existsSync(value.output + '.palette.png'), false)
+  assert.notEqual(palettePath, userPalette)
+  assert.match(palettePath.replace(/\\/g, '/'), /\/dsh-ffmpeg-gif-[^/]+\/palette\.png$/)
+  assert.equal(existsSync(dirname(palettePath)), false, '内部临时目录应在 finally 中清理')
+  assert.equal(readFileSync(userPalette, 'utf8'), 'user-owned')
+})
+
+test('ffmpeg_gif：第二遍失败也清理随机临时目录', async () => {
+  const runner = makeRunner([{ exitCode: 0 }, { exitCode: 1, stderr: 'paletteuse failed' }])
+  let palettePath = ''
+  const originalRun = runner.run.bind(runner)
+  runner.run = async (argv, options) => {
+    if (argv.some((part) => part.includes('palettegen'))) palettePath = argv.at(-1)
+    return originalRun(argv, options)
+  }
+  const gif = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_gif')
+  await assert.rejects(() => gif.execute({ input, output: join(dir, 'failed.gif'), duration: 1 }), /GIF 合成失败.*paletteuse failed/)
+  assert.notEqual(palettePath, '')
+  assert.equal(existsSync(dirname(palettePath)), false)
 })
 
 test('ffmpeg_extract：frames 显式输出自动补 %03d 与扩展名', async () => {
@@ -171,11 +205,58 @@ test('超时透传给 runner', async () => {
   assert.equal(runner.calls[0].timeoutMs, 120000)
 })
 
+test('工具执行上下文的 AbortSignal 透传给所有前台子进程入口', async () => {
+  const controller = new AbortController()
+  const exec = { signal: controller.signal }
+  const probeRunner = makeRunner([{ stdout: probeJson }])
+  const probe = buildFfmpegTools(cfg, probeRunner).find((t) => t.name === 'ffmpeg_probe')
+  await probe.execute({ input }, exec)
+  assert.equal(probeRunner.calls[0].signal, controller.signal)
+
+  const healthRunner = makeRunner([{ stdout: 'ffmpeg version test' }, { stdout: 'ffprobe version test' }])
+  const health = buildFfmpegTools(cfg, healthRunner).find((t) => t.name === 'ffmpeg_health')
+  await health.execute({}, exec)
+  assert.equal(healthRunner.calls.length, 2)
+  assert.ok(healthRunner.calls.every((call) => call.signal === controller.signal))
+})
+
+test('ffmpeg_health 不吞掉调用取消错误', async () => {
+  const controller = new AbortController()
+  const reason = new Error('caller cancelled health check')
+  controller.abort(reason)
+  const runner = { async run() { throw reason } }
+  const health = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_health')
+  await assert.rejects(() => health.execute({}, { signal: controller.signal }), /caller cancelled/)
+})
+
 test('execute 返回值可 JSON 序列化（无 undefined）', async () => {
-  const runner = makeRunner([{ stdout: probeJson }])
-  const probe = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_probe')
-  const value = await probe.execute({ input })
-  assert.deepEqual(JSON.parse(JSON.stringify(value)), value)
+  const second = join(dir, 'lossless-second.mp4')
+  writeFileSync(second, 'x')
+  const values = []
+
+  let runner = makeRunner([{ stdout: probeJson }])
+  let tools = buildFfmpegTools(cfg, runner)
+  values.push(await tools.find((t) => t.name === 'ffmpeg_probe').execute({ input }))
+
+  runner = makeRunner()
+  tools = buildFfmpegTools(cfg, runner)
+  values.push(await tools.find((t) => t.name === 'ffmpeg_cut').execute({ input, duration: 1 }))
+  values.push(await tools.find((t) => t.name === 'ffmpeg_concat').execute({ inputs: [input, second] }))
+  values.push(await tools.find((t) => t.name === 'ffmpeg_encode').execute({ input }))
+  values.push(await tools.find((t) => t.name === 'ffmpeg_subtitle').execute({ input, subtitle: sub }))
+  values.push(await tools.find((t) => t.name === 'ffmpeg_extract').execute({ input, what: 'audio' }))
+  values.push(await tools.find((t) => t.name === 'ffmpeg_gif').execute({ input, duration: 1 }))
+  values.push(await tools.find((t) => t.name === 'ffmpeg_frames').execute({ input, outputDir: join(dir, 'lossless-frames') }))
+
+  runner = makeRunner([{ stdout: probeJson }])
+  tools = buildFfmpegTools(cfg, runner)
+  values.push(await tools.find((t) => t.name === 'ffmpeg_adjust').execute({ input, mute: true }))
+
+  runner = makeRunner([{ stdout: 'ffmpeg version test' }, { stdout: 'ffprobe version test' }])
+  tools = buildFfmpegTools(cfg, runner)
+  values.push(await tools.find((t) => t.name === 'ffmpeg_health').execute({}))
+
+  for (const value of values) assert.deepEqual(JSON.parse(JSON.stringify(value)), value)
 })
 
 test('cleanup', () => { rmSync(dir, { recursive: true, force: true }) })

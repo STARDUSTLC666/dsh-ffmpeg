@@ -32,22 +32,34 @@ const DEFAULT_GRACE_MS = 15000
  * @throws 配置值非法时抛出中文错误。
  */
 export function resolveConfig(config: FfmpegConfig | undefined | null, env: NodeJS.ProcessEnv = process.env): ResolvedFfmpegConfig {
+  if (config !== undefined && config !== null && (typeof config !== 'object' || Array.isArray(config))) {
+    throw new Error('dsh-ffmpeg 配置必须是对象。')
+  }
   const cfg = config ?? {}
-  const ffmpegPath = typeof cfg.ffmpegPath === 'string' && cfg.ffmpegPath.trim() !== '' ? cfg.ffmpegPath.trim() : (env.DSH_FFMPEG_PATH?.trim() || 'ffmpeg')
-  const ffprobePath = typeof cfg.ffprobePath === 'string' && cfg.ffprobePath.trim() !== '' ? cfg.ffprobePath.trim() : (env.DSH_FFPROBE_PATH?.trim() || 'ffprobe')
+  if (cfg.ffmpegPath !== undefined && (typeof cfg.ffmpegPath !== 'string' || cfg.ffmpegPath.trim() === '')) {
+    throw new Error('ffmpegPath 必须是非空字符串。')
+  }
+  if (cfg.ffprobePath !== undefined && (typeof cfg.ffprobePath !== 'string' || cfg.ffprobePath.trim() === '')) {
+    throw new Error('ffprobePath 必须是非空字符串。')
+  }
+  if (cfg.overwrite !== undefined && typeof cfg.overwrite !== 'boolean') {
+    throw new Error('overwrite 必须是布尔值。')
+  }
+  const ffmpegPath = cfg.ffmpegPath?.trim() || env.DSH_FFMPEG_PATH?.trim() || 'ffmpeg'
+  const ffprobePath = cfg.ffprobePath?.trim() || env.DSH_FFPROBE_PATH?.trim() || 'ffprobe'
   let timeoutMs = DEFAULT_TIMEOUT_MS
   if (cfg.timeoutMs !== undefined) {
-    if (typeof cfg.timeoutMs !== 'number' || !Number.isFinite(cfg.timeoutMs) || cfg.timeoutMs <= 0) {
-      throw new Error('timeoutMs 必须是大于 0 的数字（毫秒），例如 300000。')
+    if (typeof cfg.timeoutMs !== 'number' || !Number.isInteger(cfg.timeoutMs) || cfg.timeoutMs < 10000 || cfg.timeoutMs > 2 * 60 * 60 * 1000) {
+      throw new Error('timeoutMs 必须是 10000–7200000 的整数（毫秒）。')
     }
-    timeoutMs = Math.min(2 * 60 * 60 * 1000, Math.max(10000, Math.round(cfg.timeoutMs)))
+    timeoutMs = cfg.timeoutMs
   }
   let graceMs = DEFAULT_GRACE_MS
   if (cfg.graceMs !== undefined) {
-    if (typeof cfg.graceMs !== 'number' || !Number.isFinite(cfg.graceMs) || cfg.graceMs <= 0) {
-      throw new Error('graceMs 必须是大于 0 的数字（毫秒），例如 15000。')
+    if (typeof cfg.graceMs !== 'number' || !Number.isInteger(cfg.graceMs) || cfg.graceMs < 1000 || cfg.graceMs > 120000) {
+      throw new Error('graceMs 必须是 1000–120000 的整数（毫秒）。')
     }
-    graceMs = Math.min(120000, Math.max(1000, Math.round(cfg.graceMs)))
+    graceMs = cfg.graceMs
   }
   const overwrite = cfg.overwrite === true
   return { ffmpegPath, ffprobePath, timeoutMs, graceMs, overwrite }

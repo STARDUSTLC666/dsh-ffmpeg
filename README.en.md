@@ -10,7 +10,7 @@ DSH (DeepSeek Harness) video-processing plugin: seven tools covering probing, cu
 
 ## Compatibility
 
-Verified against `@deepseek-ai/dsh@0.1.2-alpha.2` on 2026-08-31. Built for the cordis patch-bundle plugin model (`cordis.patch.yml` + `dsh.bundle.patch`). No runtime imports of `@deepseek-ai/*` internals.
+Verified against the official `@deepseek-ai/dsh@0.1.3-alpha.2` on 2026-09-08, including an 18-component co-load and the full tool registration/invocation contract. Built for the cordis patch-bundle plugin model (`cordis.patch.yml` + `dsh.bundle.patch`). No runtime imports of `@deepseek-ai/*` internals.
 
 ## Installation
 
@@ -77,7 +77,7 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # build + 57 tests, including a real-ffmpeg end-to-end suite (auto-skipped without ffmpeg)
+pnpm test       # build + 83 tests, including a real-ffmpeg end-to-end suite (auto-skipped without ffmpeg)
 ```
 
 ## License

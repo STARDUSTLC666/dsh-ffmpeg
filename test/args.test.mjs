@@ -49,6 +49,10 @@ test('encodeArgs bilibili-1080p 预设默认参数', () => {
 })
 
 test('encodeArgs vertical-1080p 带 scale 滤镜；crf/fps 覆盖生效', () => {
+  const presetArgv = encodeArgs('ffmpeg', { input: 'in.mp4', output: 'vertical.mp4', preset: 'vertical-1080p', overwrite: false })
+  const presetFilter = presetArgv[presetArgv.indexOf('-vf') + 1]
+  assert.equal(presetFilter, 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1')
+
   const argv = encodeArgs('ffmpeg', { input: 'in.mp4', output: 'out.mp4', preset: 'vertical-1080p', crf: 26, fps: 30, scale: '1080:1920', overwrite: true })
   assert.ok(argv.includes('scale=1080:1920'))
   assert.ok(argv.includes('-crf') && argv.includes('26'))
@@ -79,7 +83,7 @@ test('extractArgs audio 流拷贝 / subtitle 映射 / 单帧 / 抽帧', () => {
 })
 
 test('gif 两遍：palettegen 强制 -y，paletteuse 遵覆写策略', () => {
-  const spec = { input: 'in.mp4', output: 'out.gif', palettePath: 'out.gif.palette.png', overwrite: false, start: 1, duration: 3, fps: 10, width: 480 }
+  const spec = { input: 'in.mp4', output: 'out.gif', palettePath: '/tmp/dsh-ffmpeg-gif-test/palette.png', overwrite: false, start: 1, duration: 3, fps: 10, width: 480 }
   const pass1 = gifPaletteArgs('ffmpeg', spec)
   assert.equal(pass1[1], '-y')
   assert.ok(pass1.some((part) => part.includes('palettegen')))

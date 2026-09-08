@@ -85,7 +85,12 @@ export interface EncodeSpec {
 const PRESET_TABLE: Record<EncodePreset, { crf: number; maxrate: string; bufsize: string; vf?: string }> = {
   'bilibili-1080p': { crf: 20, maxrate: '6000k', bufsize: '12000k' },
   'bilibili-4k': { crf: 18, maxrate: '20000k', bufsize: '40000k' },
-  'vertical-1080p': { crf: 20, maxrate: '6000k', bufsize: '12000k', vf: 'scale=-2:1920' },
+  'vertical-1080p': {
+    crf: 20,
+    maxrate: '6000k',
+    bufsize: '12000k',
+    vf: 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1',
+  },
   'web-720p': { crf: 23, maxrate: '2800k', bufsize: '5600k', vf: 'scale=-2:720' },
 }
 

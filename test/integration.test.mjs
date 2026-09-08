@@ -30,7 +30,7 @@ test('环境检查：ffmpeg 可用', { skip: !hasFfmpeg }, () => {
   assert.ok(true)
 })
 
-test('端到端：生成 → probe → cut → concat → encode → frame → gif', { skip: !hasFfmpeg }, async () => {
+test('端到端：生成 → probe → cut → concat → encode（含竖屏）→ frame → gif', { skip: !hasFfmpeg }, async () => {
   // 生成 3 秒测试视频（testsrc + sine 音频）
   const gen = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=25', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=3', '-c:v', 'libx264', '-c:a', 'aac', '-t', '3', source], { encoding: 'utf8', timeout: 120000 })
   assert.equal(gen.status, 0, gen.stderr.slice(-500))
@@ -62,6 +62,11 @@ test('端到端：生成 → probe → cut → concat → encode → frame → g
   const encodedInfo = await probe.execute({ input: encodeOut.output })
   assert.equal(encodedInfo.video.codec, 'h264')
   assert.equal(encodedInfo.video.height, 720)
+
+  const verticalOut = await encode.execute({ input: cutOut.output, preset: 'vertical-1080p' })
+  const verticalInfo = await probe.execute({ input: verticalOut.output })
+  assert.equal(verticalInfo.video.width, 1080)
+  assert.equal(verticalInfo.video.height, 1920)
 
   const frameOut = await extract.execute({ input: source, what: 'frame', start: 1 })
   assert.ok(existsSync(frameOut.output))

@@ -30,14 +30,7 @@ export interface FfmpegPluginContext {
  * @param config - 插件配置（可缺省）。
  */
 export function apply(ctx: FfmpegPluginContext, config?: FfmpegConfig | null): void {
-  let cfg
-  try {
-    cfg = resolveConfig(config)
-  } catch (error) {
-    console.warn('[dsh-ffmpeg] ' + (error instanceof Error ? error.message : String(error)))
-    cfg = resolveConfig(null)
-  }
-
+  const cfg = resolveConfig(config)
   const runner = createSubprocessRunner(ctx.subprocess.spawn, cfg.graceMs, cfg.timeoutMs)
 
   const disposers: Array<() => void> = []

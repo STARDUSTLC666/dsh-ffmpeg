@@ -34,3 +34,22 @@ test('createSubprocessRunner 正常结束收集 stdout/stderr', async () => {
   const result = await runner.run(['ffmpeg', '-version'])
   assert.deepEqual(result, { exitCode: 0, signal: null, stdout: 'ok', stderr: 'warn' })
 })
+
+test('createSubprocessRunner 将工具调用的 AbortSignal 透传给前台子进程', async () => {
+  const caller = new AbortController()
+  let observed
+  let rejectDone
+  const done = new Promise((_resolve, reject) => { rejectDone = reject })
+  const spawn = (spec) => {
+    observed = spec.signal
+    spec.signal.addEventListener('abort', () => rejectDone(spec.signal.reason), { once: true })
+    return { done, collected: {}, terminate() {} }
+  }
+  const runner = createSubprocessRunner(spawn, 1000, 5000)
+  const running = runner.run(['ffmpeg', '-version'], { signal: caller.signal })
+  const reason = new Error('cancelled by caller')
+  caller.abort(reason)
+  await assert.rejects(() => running, /cancelled by caller/)
+  assert.equal(observed.aborted, true)
+  assert.equal(observed.reason, reason)
+})

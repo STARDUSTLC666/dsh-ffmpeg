@@ -11,7 +11,7 @@ function makeRunner(map = {}) {
   }
 }
 
-const cfg = resolveConfig({ timeoutMs: 5000 })
+const cfg = resolveConfig({ timeoutMs: 10000 })
 
 test('ffmpeg_health 两个二进制可用时 ok=true', async () => {
   const health = buildFfmpegTools(cfg, makeRunner()).find((t) => t.name === 'ffmpeg_health')

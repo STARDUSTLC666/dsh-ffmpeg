@@ -20,7 +20,7 @@ function makeRunner(results = []) {
 const dir = mkdtempSync(join(tmpdir(), 'dsh-ffmpeg-frames-'))
 const input = join(dir, 'movie.mp4')
 writeFileSync(input, 'x')
-const cfg = resolveConfig({ timeoutMs: 5000 })
+const cfg = resolveConfig({ timeoutMs: 10000 })
 
 const PROBE_JSON = JSON.stringify({
   format: { format_name: 'mov,mp4', duration: '90.5', size: '5242880', bit_rate: '2500000' },
