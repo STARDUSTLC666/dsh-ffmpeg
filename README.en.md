@@ -12,6 +12,8 @@ DSH (DeepSeek Harness) video-processing plugin: seven tools covering probing, cu
 
 Verified with official `@deepseek-ai/dsh@0.1.5-rc.1` and Node `24.16.0` on 2026-09-11: all 18 components load alongside Modlens, with passing tool-schema, skill-registration and offline read-only invocation checks. Uses the `cordis.patch.yml` + `dsh.bundle.patch` bundle model. Node requirements match this Harness release: 22.19 or later within 22.x, or 24 or later. Live external-service workflows require separate configuration and validation.
 
+2026-09-13 fix: retain the service receiver when calling `subprocess.spawn`, preventing failures caused by passing the method as an unbound callback. Verified with official `0.1.5-rc.1` and `0.1.5-rc.2` on Node `24.16.0`. FFmpeg/ffprobe version checks and probing a real MP4 pass. This fixes the tool invocation failure reported in [#3](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues/3).
+
 ## Installation
 
 ```bash

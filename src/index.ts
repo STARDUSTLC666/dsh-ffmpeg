@@ -31,7 +31,7 @@ export interface FfmpegPluginContext {
  */
 export function apply(ctx: FfmpegPluginContext, config?: FfmpegConfig | null): void {
   const cfg = resolveConfig(config)
-  const runner = createSubprocessRunner(ctx.subprocess.spawn, cfg.graceMs, cfg.timeoutMs)
+  const runner = createSubprocessRunner((spec) => ctx.subprocess.spawn(spec), cfg.graceMs, cfg.timeoutMs)
 
   const disposers: Array<() => void> = []
   for (const definition of buildFfmpegTools(cfg, runner)) {

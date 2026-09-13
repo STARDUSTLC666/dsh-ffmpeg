@@ -15,6 +15,8 @@ DSH（DeepSeek Harness）视频处理工具插件：十个工具：探测、剪�
 
 已在官方 `@deepseek-ai/dsh@0.1.5-rc.1`、Node `24.16.0` 上验证（2026-09-11）：18 个组件与 Modlens 同载，工具 schema、技能注册及离线只读调用检查通过。采用 `cordis.patch.yml` + `dsh.bundle.patch` 组合包模型。Node 要求与该版本 Harness 一致：22.19 及以上的 22.x，或 24 及以上。外部服务的实际业务操作需按各组件配置单独验证。
 
+2026-09-13 修复：保留宿主 `subprocess.spawn` 的服务对象，避免方法独立传递后因 `this` 丢失而报错。已在官方 `0.1.5-rc.1` 和 `0.1.5-rc.2`、Node `24.16.0` 上验证。FFmpeg/ffprobe 版本检查与真实 MP4 探测均通过。此修复解决 [#3](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues/3) 所报告的全部工具调用失败。
+
 ## 安装
 
 ```bash
