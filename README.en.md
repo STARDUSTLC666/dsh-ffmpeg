@@ -51,10 +51,10 @@ Override the plugin row in your profile's `cordis.patch.yml` (defaults apply whe
 | :-- | :-- | :-- |
 | `ffmpeg_probe` | Probe media info (format/duration/resolution/fps/bitrate/audio/subtitle streams; multi-video files return a full videos list) | `input` required |
 | `ffmpeg_cut` | Cut a clip (stream copy by default, accurate re-encode optional) | `input` required; `start`/`end`/`duration` |
-| `ffmpeg_concat` | Concatenate 2-20 clips (stream copy for identical codecs / re-encode for mixed) | `inputs` array required |
+| `ffmpeg_concat` | Concatenate 2-20 clips (stream copy for identical codecs / re-encode for mixed; video-only when any input has no audio) | `inputs` array required |
 | `ffmpeg_encode` | Transcode with presets (bilibili 1080p/4K, vertical 1080p, web-720p) plus crf/fps/scale overrides | `input` required; `preset` optional |
 | `ffmpeg_subtitle` | Burn subtitles (SRT/ASS hard subs) | `input` + `subtitle` required |
-| `ffmpeg_extract` | Extract audio (m4a) / frame sequences / single frame / subtitle stream | `input` + `what` required |
+| `ffmpeg_extract` | Extract audio (m4a; non-AAC is auto-transcoded to AAC) / frame sequences / single frame / subtitle stream | `input` + `what` required |
 | `ffmpeg_gif` | Video to high-quality GIF (two-pass palette) | `input` required; `fps`/`width`/`duration` optional |
 
 ### Examples
@@ -64,6 +64,7 @@ ffmpeg_probe { input: E:\videos\raw.mp4 }
 ffmpeg_cut { input: E:\videos\raw.mp4, start: 10, end: 30 }
 ffmpeg_encode { input: E:\videos\raw.mp4, preset: bilibili-1080p }
 ffmpeg_subtitle { input: E:\videos\raw.mp4, subtitle: E:\videos\subs.srt }
+ffmpeg_extract { input: E:\videos\raw.webm, what: audio }
 ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 ```
 
@@ -79,7 +80,7 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # build + 83 tests, including a real-ffmpeg end-to-end suite (auto-skipped without ffmpeg)
+pnpm test       # build + 102 tests, including a real-ffmpeg end-to-end suite (auto-skipped without ffmpeg)
 ```
 
 ## License

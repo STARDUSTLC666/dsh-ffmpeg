@@ -74,3 +74,23 @@ test('createSubprocessRunner 取消后 done 立即成功 resolve 也必须抛取
   await assert.rejects(() => running, /cancelled but process reported exitCode 0/)
   assert.equal(observed.signal.aborted, true)
 })
+
+test('createSubprocessRunner stdout 被宿主截断（lossy）时抛 4MB 截断错误', async () => {
+  const spawn = () => ({
+    done: Promise.resolve({ exitCode: 0, signal: null }),
+    collected: {
+      stdout: { readFrom: () => ({ text: '\"streams\":[{\"codec_type\":\"video\"}]}', lossy: true }) },
+      stderr: { readFrom: () => ({ text: '' }) },
+    },
+    terminate: () => {},
+  })
+  const runner = createSubprocessRunner(spawn, 1000, 5000)
+  await assert.rejects(
+    () => runner.run(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', 'huge.mkv']),
+    (error) => {
+      assert.match(String(error.message), /ffprobe 输出超过 4MB 已截断/)
+      assert.doesNotMatch(String(error.message), /解析失败/)
+      return true
+    },
+  )
+})

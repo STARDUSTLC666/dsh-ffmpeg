@@ -54,10 +54,10 @@ dsh plugin --profile web remove dsh-ffmpeg
 | :-- | :-- | :-- |
 | `ffmpeg_probe` | 探测媒体信息（格式/时长/分辨率/帧率/码率/音轨/字幕轨；多视频流时返回完整 videos 列表） | `input` 必填 |
 | `ffmpeg_cut` | 剪辑片段（默认流拷贝秒级，可精确重编码） | `input` 必填；`start`/`end`/`duration` |
-| `ffmpeg_concat` | 拼接 2-20 个片段（同编码流拷贝 / 混合编码重编码） | `inputs` 数组必填 |
+| `ffmpeg_concat` | 拼接 2-20 个片段（同编码流拷贝 / 混合编码重编码；无音轨输入按纯视频拼接） | `inputs` 数组必填 |
 | `ffmpeg_encode` | 转码（B 站 1080p/4K、竖屏 1080p、web-720p 预设 + crf/fps/scale 覆盖） | `input` 必填；`preset` 可选 |
 | `ffmpeg_subtitle` | 字幕烧录（SRT/ASS 硬字幕） | `input`+`subtitle` 必填 |
-| `ffmpeg_extract` | 提取音轨（m4a）/ 抽帧序列 / 单帧 / 字幕流 | `input`+`what` 必填 |
+| `ffmpeg_extract` | 提取音轨（m4a，非 AAC 自动转 AAC）/ 抽帧序列 / 单帧 / 字幕流 | `input`+`what` 必填 |
 | `ffmpeg_gif` | 视频转高质量 GIF（两遍调色板） | `input` 必填；`fps`/`width`/`duration` 可选 |
 | `ffmpeg_frames` | 批量抽帧给视觉模型读图（定间隔或指定时间点，PNG/JPG） | `input` 必填；`every`/`times` 二选一 |
 | `ffmpeg_adjust` | 变速（音视频同步）/ 音量 / 静音 / 旋转（竖横屏互转），可组合 | `input` 必填；`speed`/`volume`/`mute`/`rotate` 至少一个 |
@@ -70,6 +70,7 @@ ffmpeg_probe { input: E:\videos\raw.mp4 }
 ffmpeg_cut { input: E:\videos\raw.mp4, start: 10, end: 30 }
 ffmpeg_encode { input: E:\videos\raw.mp4, preset: bilibili-1080p }
 ffmpeg_subtitle { input: E:\videos\raw.mp4, subtitle: E:\videos\subs.srt }
+ffmpeg_extract { input: E:\videos\raw.webm, what: audio }
 ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 ```
@@ -86,7 +87,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 83 个测试（含真实 ffmpeg 端到端集成，缺 ffmpeg 自动跳过）
+pnpm test       # 构建 + 102 个测试（含真实 ffmpeg 端到端集成，缺 ffmpeg 自动跳过）
 ```
 
 ## License

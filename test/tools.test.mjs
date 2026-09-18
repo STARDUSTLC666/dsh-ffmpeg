@@ -302,4 +302,42 @@ test('execute 返回值可 JSON 序列化（无 undefined）', async () => {
   for (const value of values) assert.deepEqual(JSON.parse(JSON.stringify(value)), value)
 })
 
+
+test('ffmpeg_extract audio：流拷贝失败自动回退转 AAC', async () => {
+  const runner = makeRunner([
+    { exitCode: 1, stderr: 'Could not find tag for codec opus in stream #1, codec not currently supported in container' },
+    { exitCode: 0 },
+  ])
+  const extract = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_extract')
+  const value = await extract.execute({ input, what: 'audio' })
+  assert.equal(value.output, join(dir, 'video.audio.m4a'))
+  assert.equal(runner.calls.length, 2)
+  assert.deepEqual(runner.calls[1].argv, ['ffmpeg', '-y', '-i', input, '-vn', '-c:a', 'aac', join(dir, 'video.audio.m4a')])
+})
+
+test('ffmpeg_concat 重编码：probe 到输入无音轨时用 a=0', async () => {
+  const second = join(dir, 'no-audio.mp4')
+  writeFileSync(second, 'x')
+  const calls = []
+  const runner = {
+    async run(argv) {
+      calls.push([...argv])
+      if (argv[0] === 'ffprobe') {
+        const noAudio = argv[argv.length - 1] === second
+        const streams = noAudio
+          ? [{ codec_type: 'video' }]
+          : [{ codec_type: 'video' }, { codec_type: 'audio', codec_name: 'aac' }]
+        return { exitCode: 0, signal: null, stdout: JSON.stringify({ streams }), stderr: '' }
+      }
+      return { exitCode: 0, signal: null, stdout: '', stderr: '' }
+    },
+  }
+  const concat = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_concat')
+  const value = await concat.execute({ inputs: [input, second], reencode: true })
+  assert.equal(value.reencode, true)
+  const ffmpegCall = calls.find((argv) => argv[0] === 'ffmpeg')
+  assert.ok(ffmpegCall, '应执行 ffmpeg')
+  assert.ok(ffmpegCall.includes('concat=n=2:v=1:a=0'))
+})
+
 test('cleanup', () => { rmSync(dir, { recursive: true, force: true }) })

@@ -28,11 +28,15 @@ export interface SubprocessHandleLike {
         stdout?: {
             readFrom(offset: number): {
                 text: string;
+                lossy?: boolean;
+                truncated?: boolean;
             };
         };
         stderr?: {
             readFrom(offset: number): {
                 text: string;
+                lossy?: boolean;
+                truncated?: boolean;
             };
         };
     };

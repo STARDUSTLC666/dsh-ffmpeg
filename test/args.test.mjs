@@ -96,3 +96,17 @@ test('fmtSeconds 与 escapeFilterPath', () => {
   assert.equal(fmtSeconds(1.234567), '1.235')
   assert.equal(escapeFilterPath('C:\\a\\b.srt'), 'C\\:/a/b.srt')
 })
+
+test('extractArgs audio 回退重编码：transcodeAudio=true 用 -c:a aac', () => {
+  assert.deepEqual(extractArgs('ffmpeg', {
+    input: 'in.webm', what: 'audio', output: 'a.m4a', overwrite: true, streamIndex: 0, transcodeAudio: true,
+  }), ['ffmpeg', '-y', '-i', 'in.webm', '-vn', '-c:a', 'aac', 'a.m4a'])
+})
+
+test('concatArgs 重编码：任一输入无音轨时用 a=0，全有才 a=1', () => {
+  const mixed = concatArgs('ffmpeg', { inputs: ['a.mp4', 'b.mp4'], output: 'out.mp4', overwrite: false, reencode: true, hasAudio: false })
+  assert.ok(mixed.includes('concat=n=2:v=1:a=0'), '缺音轨输入应走 a=0')
+  assert.ok(!mixed.includes('concat=n=2:v=1:a=1'))
+  const all = concatArgs('ffmpeg', { inputs: ['a.mp4', 'b.mp4'], output: 'out.mp4', overwrite: false, reencode: true, hasAudio: true })
+  assert.ok(all.includes('concat=n=2:v=1:a=1'))
+})

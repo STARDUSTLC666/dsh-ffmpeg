@@ -49,6 +49,8 @@ export interface ConcatSpec {
   output: string
   overwrite: boolean
   reencode: boolean
+  /** 所有输入都含音频流（probe 结果）：只有全有才能用 a=1，否则 concat filter 绑定失败。 */
+  hasAudio?: boolean
 }
 
 /** 拼接：同编码流拷贝走 concat demuxer（需 list 文件），否则 filter_complex 重编码。 */
@@ -59,7 +61,10 @@ export function concatArgs(ffmpeg: string, spec: ConcatSpec): string[] {
   }
   const parts: string[] = [ffmpeg, flag]
   for (const input of spec.inputs) parts.push('-i', input)
-  parts.push('-filter_complex', 'concat=n=' + spec.inputs.length + ':v=1:a=1', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-c:a', 'aac', spec.output)
+  parts.push('-filter_complex', 'concat=n=' + spec.inputs.length + ':v=1:a=' + (spec.hasAudio === false ? '0' : '1'))
+  // a=0 时 filter 没有音频 pad，但 ffmpeg 仍可能自动选中输入音轨；用 -an 明确只要视频
+  if (spec.hasAudio === false) parts.push('-an')
+  parts.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-c:a', 'aac', spec.output)
   return parts
 }
 
@@ -136,12 +141,17 @@ export interface ExtractSpec {
   fps?: number
   streamIndex: number
   maxFrames?: number
+  /** 音频流拷贝失败后回退 AAC 重编码（tools 层在 AAC 容器里触发）。 */
+  transcodeAudio?: boolean
 }
 
 /** 提取：音频（拷贝）/ 抽帧序列 / 单帧 / 字幕流。 */
 export function extractArgs(ffmpeg: string, spec: ExtractSpec): string[] {
   const flag = overwriteFlag(spec.overwrite)
   if (spec.what === 'audio') {
+    if (spec.transcodeAudio === true) {
+      return [ffmpeg, flag, '-i', spec.input, '-vn', '-c:a', 'aac', spec.output]
+    }
     return [ffmpeg, flag, '-i', spec.input, '-vn', '-c', 'copy', spec.output]
   }
   if (spec.what === 'subtitle') {

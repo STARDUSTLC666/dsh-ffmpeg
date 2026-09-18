@@ -5,6 +5,8 @@
  * @module dsh-ffmpeg/exec
  */
 
+import { basename } from 'node:path'
+
 /** 一次运行的结果。 */
 export interface RunResult {
   exitCode: number | null
@@ -22,8 +24,8 @@ export interface ProcessRunner {
 export interface SubprocessHandleLike {
   done: Promise<{ exitCode: number | null; signal: string | null }>
   collected: {
-    stdout?: { readFrom(offset: number): { text: string } }
-    stderr?: { readFrom(offset: number): { text: string } }
+    stdout?: { readFrom(offset: number): { text: string; lossy?: boolean; truncated?: boolean } }
+    stderr?: { readFrom(offset: number): { text: string; lossy?: boolean; truncated?: boolean } }
   }
   terminate(): void
 }
@@ -69,9 +71,14 @@ export function createSubprocessRunner(spawn: SubprocessSpawnLike, graceMs: numb
         const outcome = await handle.done
         // done 可能因竞态在取消之后才 resolve：以 signal 状态为准，不能当成功返回
         if (signal.aborted) throw signal.reason
-        const stdout = handle.collected.stdout?.readFrom(0).text ?? ''
-        const stderr = handle.collected.stderr?.readFrom(0).text ?? ''
-        return { exitCode: outcome.exitCode, signal: outcome.signal, stdout, stderr }
+        const stdoutRead = handle.collected.stdout?.readFrom(0)
+        const stderrRead = handle.collected.stderr?.readFrom(0)
+        // collect 上限 4MB，超出时宿主保尾丢头；ffprobe JSON 丢头必然残缺，必须在解析前点名截断
+        if (stdoutRead?.lossy === true || stdoutRead?.truncated === true) {
+          const program = basename(String(argv[0] ?? '')).replace(/\.exe$/i, '')
+          throw new Error(program + ' 输出超过 4MB 已截断（宿主仅保留尾部、丢弃头部），无法解析完整 JSON；请缩小探测范围或改用更小的输入后重试。')
+        }
+        return { exitCode: outcome.exitCode, signal: outcome.signal, stdout: stdoutRead?.text ?? '', stderr: stderrRead?.text ?? '' }
       } finally {
         clearTimeout(timer)
       }
