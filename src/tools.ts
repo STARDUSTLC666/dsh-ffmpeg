@@ -98,9 +98,16 @@ function stringArray(args: Record<string, unknown>, key: string): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '').map((item) => item.trim())
 }
 
+/** 已取消则抛出取消原因；作为 await 前后的统一取消检查。 */
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted === true) throw signal.reason
+}
+
 /** 执行并检查退出码；非零抛中文错误（附 stderr 尾部）。 */
 async function runChecked(runner: ProcessRunner, argv: string[], timeoutMs: number, label: string, signal?: AbortSignal): Promise<RunResult> {
+  throwIfAborted(signal)
   const result = await runner.run(argv, { timeoutMs, ...(signal === undefined ? {} : { signal }) })
+  throwIfAborted(signal)
   if (result.exitCode !== 0) {
     const tail = result.stderr.trim().split(/\r?\n/).slice(-6).join(' | ')
     throw new Error(label + '失败（退出码 ' + String(result.exitCode ?? 'null') + (result.signal ? '，信号 ' + result.signal : '') + '）：' + (tail || '无错误输出'))
@@ -487,13 +494,13 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
 
   const frames: FfmpegToolDefinition = {
     name: 'ffmpeg_frames',
-    description: '从视频批量抽帧为图片（PNG/JPG）。两种模式：every（固定秒间隔抽帧，如 every=2 表示每 2 秒一帧，默认 1）或 times（指定时间点列表，如 ["00:00:05","00:01:30"]，最多 20 个）。maxFrames 限制 every 模式的帧数上限（1-500，默认 100）。返回输出目录、文件清单与数量，便于后续视觉模型读图。',
+    description: '从视频批量抽帧为图片（PNG/JPG）。两种模式：every（固定秒间隔抽帧，如 every=2 表示每 2 秒一帧，默认 1）或 times（指定时间点列表，如 ["00:00:05","00:01:30"]，最多 20 个）。maxFrames 限制 every 模式的帧数上限（1-500，默认 100）。每次运行在 outputDir 下新建独立 run-* 子目录，只返回本次运行的输出目录、文件清单与数量，便于后续视觉模型读图。',
     parameters: compileParameters({
       input: { type: 'string', required: true, description: '输入视频（必填）。' },
       every: { type: 'number', description: '抽帧间隔秒数（与 times 二选一，默认 1）。' },
       times: { type: 'array', items: { type: 'string' }, description: '时间点列表（与 every 二选一，最多 20 个，秒数或 HH:MM:SS.mmm）。' },
       maxFrames: { type: 'integer', description: 'every 模式帧数上限 1-500（默认 100）。' },
-      outputDir: { type: 'string', description: '输出目录（可选，默认输入同目录 <文件名>-frames）。' },
+      outputDir: { type: 'string', description: '输出目录（可选，默认输入同目录 <文件名>-frames）；每次运行会在其中新建 run-* 独立子目录。' },
       format: { type: 'string', description: '图片格式：png（默认）或 jpg。' },
     }),
     output: {
@@ -512,13 +519,15 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       const times = stringArray(args, 'times')
       const outDir = optionalString(args, 'outputDir') ?? join(dirname(input), sanitizeName(basename(input, extname(input))) + '-frames')
       mkdirSync(outDir, { recursive: true })
+      // 每次运行独占 run-* 子目录：历史 frame-* 不参与计数，也不会被本次 -y 覆盖
+      const runDir = mkdtempSync(join(outDir, 'run-'))
       if (times.length > 0) {
         if (times.length > 20) throw new Error('times 最多 20 个时间点（当前 ' + times.length + ' 个）。')
         let i = 0
         for (const raw of times) {
           const at = parseTimeArg(raw)
           if (at === null) throw new Error('times 里第 ' + (i + 1) + ' 个时间点非法：' + raw + '（请用秒数或 HH:MM:SS.mmm）。')
-          const target = join(outDir, 'frame-' + String(i + 1).padStart(3, '0') + ext)
+          const target = join(runDir, 'frame-' + String(i + 1).padStart(3, '0') + ext)
           await runChecked(runner, frameAtArgs(cfg.ffmpegPath, { input, time: at, output: target, overwrite: cfg.overwrite }), timeout, 'ffmpeg 定点抽帧', exec?.signal)
           i++
         }
@@ -527,12 +536,12 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
         if (every <= 0) throw new Error('every 必须大于 0。')
         const maxFramesRaw = args.maxFrames
         const maxFrames = typeof maxFramesRaw === 'number' && Number.isInteger(maxFramesRaw) ? Math.min(500, Math.max(1, maxFramesRaw)) : 100
-        const pattern = join(outDir, 'frame-%03d' + ext)
+        const pattern = join(runDir, 'frame-%03d' + ext)
         await runChecked(runner, extractArgs(cfg.ffmpegPath, { input, what: 'frames', output: pattern, overwrite: cfg.overwrite, fps: 1 / every, streamIndex: 0, maxFrames }), timeout, 'ffmpeg 抽帧', exec?.signal)
       }
-      const files = readdirSync(outDir).filter((f) => f.startsWith('frame-') && f.endsWith(ext)).sort()
+      const files = readdirSync(runDir).filter((f) => f.startsWith('frame-') && f.endsWith(ext)).sort()
       const every = optionalNumber(args, 'every') ?? 1
-      return { outputDir: outDir, mode: times.length > 0 ? 'times' : 'every', every: times.length > 0 ? null : every, count: files.length, files: files.slice(0, 200) }
+      return { outputDir: runDir, mode: times.length > 0 ? 'times' : 'every', every: times.length > 0 ? null : every, count: files.length, files }
     },
     timeoutMs: timeout,
   }
@@ -562,8 +571,8 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       const speed = optionalNumber(args, 'speed')
       if (speed !== undefined && (speed < 0.1 || speed > 100)) throw new Error('speed 必须在 0.1-100 之间（当前：' + speed + '）。')
       const volume = optionalString(args, 'volume')
-      if (volume !== undefined && !/^\d+(\.\d+)?$|^-?\d+(\.\d+)?dB$/.test(volume)) {
-        throw new Error('volume 格式必须是倍数（如 1.5）或分贝（如 -3dB）。')
+      if (volume !== undefined && !/^[+-]?\d+(\.\d+)?(dB)?$/.test(volume)) {
+        throw new Error('volume 格式必须是倍数（如 1.5）或分贝（如 -3dB / +2dB）。')
       }
       const mute = args.mute === true
       let rotate: RotateDeg | undefined
@@ -611,8 +620,10 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       const checks: Array<Record<string, unknown>> = []
       let ok = true
       for (const [label, bin] of [['ffmpeg', cfg.ffmpegPath], ['ffprobe', cfg.ffprobePath]] as const) {
+        throwIfAborted(exec?.signal)
         try {
           const result = await runner.run([bin, '-version'], { timeoutMs: 15000, ...(exec?.signal === undefined ? {} : { signal: exec.signal }) })
+          throwIfAborted(exec?.signal)
           const firstLine = result.stdout.split(/\r?\n/)[0]?.trim() ?? ''
           if (result.exitCode === 0) {
             checks.push({ name: label, ok: true, path: bin, version: firstLine })
@@ -621,7 +632,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
             checks.push({ name: label, ok: false, path: bin, detail: '退出码 ' + String(result.exitCode) + '：' + firstLine })
           }
         } catch (error) {
-          if (exec?.signal.aborted === true) throw error
+          throwIfAborted(exec?.signal)
           ok = false
           checks.push({ name: label, ok: false, path: bin, detail: error instanceof Error ? error.message : String(error) })
         }

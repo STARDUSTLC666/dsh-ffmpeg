@@ -71,6 +71,7 @@ ffmpeg_cut { input: E:\videos\raw.mp4, start: 10, end: 30 }
 ffmpeg_encode { input: E:\videos\raw.mp4, preset: bilibili-1080p }
 ffmpeg_subtitle { input: E:\videos\raw.mp4, subtitle: E:\videos\subs.srt }
 ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
+ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 ```
 
 ## 安全设计

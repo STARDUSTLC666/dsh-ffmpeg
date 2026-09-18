@@ -107,4 +107,23 @@ test('ffmpeg_adjust render 输出人类可读摘要', () => {
   assert.match(blocks[0].text, /调整完成：x\.mp4（倍速 x2，静音）/)
 })
 
+test('ffmpeg_adjust 接受 README 示例 volume:+2dB（正号分贝）', async () => {
+  const calls = []
+  const runner = {
+    run: async (argv) => {
+      calls.push([...argv])
+      if (argv.includes('-show_streams')) {
+        return { exitCode: 0, signal: null, stdout: JSON.stringify({ format: { format_name: 'mp4' }, streams: [{ codec_type: 'video' }, { codec_type: 'audio' }] }), stderr: '' }
+      }
+      return { exitCode: 0, signal: null, stdout: '', stderr: '' }
+    },
+  }
+  const adjust = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_adjust')
+  const value = await adjust.execute({ input, volume: '+2dB', output: join(dir, 'out-plus2.mp4') })
+  assert.deepEqual(value.ops, ['音量 +2dB'])
+  const ffmpegCall = calls.find((argv) => !argv.includes('-show_streams'))
+  assert.ok(ffmpegCall.includes('-af'))
+  assert.equal(ffmpegCall[ffmpegCall.indexOf('-af') + 1], 'volume=+2dB')
+})
+
 test('after all', () => rmSync(dir, { recursive: true, force: true }))

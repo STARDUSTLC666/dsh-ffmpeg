@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { buildFfmpegTools, buildProbeSummary, resolveConfig, extractArgs, frameAtArgs } from '../lib/index.js'
 
 function makeRunner(results = []) {
@@ -13,6 +13,24 @@ function makeRunner(results = []) {
       calls.push({ argv: [...argv] })
       const preset = results.shift()
       return { exitCode: preset?.exitCode ?? 0, signal: null, stdout: preset?.stdout ?? '', stderr: preset?.stderr ?? '' }
+    },
+  }
+}
+
+/** 模拟 ffmpeg：在输出 pattern 所在目录按次数生成 frame-*.png，验证只统计本次运行产物。 */
+function makeFramesRunner(frameCounts) {
+  const calls = []
+  return {
+    calls,
+    async run(argv) {
+      calls.push({ argv: [...argv] })
+      const pattern = String(argv[argv.length - 1])
+      const targetDir = dirname(pattern)
+      const count = frameCounts.shift() ?? 0
+      for (let index = 1; index <= count; index++) {
+        writeFileSync(join(targetDir, 'frame-' + String(index).padStart(3, '0') + '.png'), 'run+' + index)
+      }
+      return { exitCode: 0, signal: null, stdout: '', stderr: '' }
     },
   }
 }
@@ -51,22 +69,51 @@ test('ffmpeg_probe 返回 summary 且渲染包含摘要行', async () => {
   assert.match(blocks[0].text, /摘要：/)
 })
 
-test('ffmpeg_frames every 模式：产物计数与 -frames:v 钳制', async () => {
+test('ffmpeg_frames every 模式：只统计本次运行帧，历史 frame-* 不计数', async () => {
   const outDir = join(dir, 'frames-every')
   mkdirSync(outDir, { recursive: true })
-  writeFileSync(join(outDir, 'frame-001.png'), '1')
-  writeFileSync(join(outDir, 'frame-002.png'), '2')
+  writeFileSync(join(outDir, 'frame-001.png'), 'old-1')
+  writeFileSync(join(outDir, 'frame-002.png'), 'old-2')
   writeFileSync(join(outDir, 'noise.txt'), 'n')
-  const runner = makeRunner()
+  const runner = makeFramesRunner([1])
   const frames = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_frames')
   const value = await frames.execute({ input, every: 2, outputDir: outDir })
   assert.equal(value.mode, 'every')
-  assert.equal(value.count, 2)
-  assert.deepEqual(value.files, ['frame-001.png', 'frame-002.png'])
+  assert.equal(value.count, 1)
+  assert.deepEqual(value.files, ['frame-001.png'])
+  assert.equal(readFileSync(join(value.outputDir, 'frame-001.png'), 'utf8'), 'run+1')
+  assert.equal(readFileSync(join(outDir, 'frame-002.png'), 'utf8'), 'old-2', '历史帧不能被本次运行覆盖或计入')
   const argv = runner.calls[0].argv
   assert.ok(argv.includes('-frames:v'))
   assert.equal(argv[argv.indexOf('-frames:v') + 1], '100')
   assert.ok(argv.includes('fps=0.5'))
+})
+
+test('ffmpeg_frames 同一 outputDir 连跑两次：第二次只统计本次帧', async () => {
+  const outDir = join(dir, 'frames-rerun')
+  mkdirSync(outDir, { recursive: true })
+  const runner = makeFramesRunner([2, 1])
+  const frames = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_frames')
+  const first = await frames.execute({ input, every: 1, outputDir: outDir })
+  const second = await frames.execute({ input, every: 1, outputDir: outDir })
+  assert.equal(first.count, 2)
+  assert.equal(second.count, 1, '第二次必须只数到本次写入的 1 帧')
+  assert.deepEqual(second.files, ['frame-001.png'])
+  assert.notEqual(second.outputDir, first.outputDir)
+  assert.equal(readFileSync(join(first.outputDir, 'frame-002.png'), 'utf8'), 'run+2', '第一次的帧仍保留在各自运行目录')
+})
+
+test('ffmpeg_frames 超过 200 帧：count 与 files 长度一致，清单不静默截断', async () => {
+  const outDir = join(dir, 'frames-many')
+  mkdirSync(outDir, { recursive: true })
+  const runner = makeFramesRunner([250])
+  const frames = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_frames')
+  const value = await frames.execute({ input, every: 1, maxFrames: 500, outputDir: outDir })
+  assert.equal(value.count, 250)
+  assert.equal(value.files.length, value.count, 'files 长度必须与 count 一致')
+  assert.equal(value.files.length, 250)
+  assert.equal(value.files[0], 'frame-001.png')
+  assert.equal(value.files[249], 'frame-250.png')
 })
 
 test('ffmpeg_frames times 模式：逐时间点执行且校验非法时间', async () => {

@@ -229,6 +229,49 @@ test('ffmpeg_health 不吞掉调用取消错误', async () => {
   await assert.rejects(() => health.execute({}, { signal: controller.signal }), /caller cancelled/)
 })
 
+test('取消后的工具调用抛取消原因，而不是「退出码 null：无错误输出」', async () => {
+  const controller = new AbortController()
+  const reason = new Error('caller cancelled cut')
+  controller.abort(reason)
+  const runner = { async run() { return { exitCode: null, signal: 'SIGTERM', stdout: '', stderr: '' } } }
+  const cut = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_cut')
+  await assert.rejects(
+    () => cut.execute({ input, duration: 1 }, { signal: controller.signal }),
+    (error) => {
+      assert.match(String(error.message), /caller cancelled cut/)
+      assert.doesNotMatch(String(error.message), /退出码 null/)
+      return true
+    },
+  )
+})
+
+test('ffmpeg_health 在 signal 已 abort 后不再继续探测', async () => {
+  const controller = new AbortController()
+  const reason = new Error('caller cancelled before health check')
+  controller.abort(reason)
+  const calls = []
+  const runner = { async run(argv) { calls.push([...argv]); return { exitCode: 0, signal: null, stdout: 'ffmpeg version 6.0', stderr: '' } } }
+  const health = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_health')
+  await assert.rejects(() => health.execute({}, { signal: controller.signal }), /caller cancelled before health check/)
+  assert.equal(calls.length, 0)
+})
+
+test('ffmpeg_health 探测途中被取消后不再探测下一个二进制', async () => {
+  const controller = new AbortController()
+  const reason = new Error('cancelled during ffmpeg check')
+  const calls = []
+  const runner = {
+    async run(argv) {
+      calls.push([...argv])
+      controller.abort(reason)
+      return { exitCode: 0, signal: null, stdout: 'ffmpeg version 6.0', stderr: '' }
+    },
+  }
+  const health = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_health')
+  await assert.rejects(() => health.execute({}, { signal: controller.signal }), /cancelled during ffmpeg check/)
+  assert.equal(calls.length, 1)
+})
+
 test('execute 返回值可 JSON 序列化（无 undefined）', async () => {
   const second = join(dir, 'lossless-second.mp4')
   writeFileSync(second, 'x')

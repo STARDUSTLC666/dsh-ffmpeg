@@ -53,3 +53,24 @@ test('createSubprocessRunner 将工具调用的 AbortSignal 透传给前台子�
   assert.equal(observed.aborted, true)
   assert.equal(observed.reason, reason)
 })
+
+test('createSubprocessRunner 取消后 done 立即成功 resolve 也必须抛取消原因', async () => {
+  const caller = new AbortController()
+  const reason = new Error('cancelled but process reported exitCode 0')
+  let resolveDone
+  let observed
+  const spawn = (spec) => {
+    observed = spec
+    spec.signal.addEventListener('abort', () => resolveDone({ exitCode: 0, signal: null }), { once: true })
+    return {
+      done: new Promise((resolve) => { resolveDone = resolve }),
+      collected: { stdout: { readFrom: () => ({ text: 'done' }) }, stderr: { readFrom: () => ({ text: '' }) } },
+      terminate: () => {},
+    }
+  }
+  const runner = createSubprocessRunner(spawn, 1000, 5000)
+  const running = runner.run(['ffmpeg', '-version'], { signal: caller.signal })
+  caller.abort(reason)
+  await assert.rejects(() => running, /cancelled but process reported exitCode 0/)
+  assert.equal(observed.signal.aborted, true)
+})
