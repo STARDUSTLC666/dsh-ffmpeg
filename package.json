@@ -1,6 +1,6 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "DSH 视频处理插件：ffmpeg 探测、裁剪、拼接、压制、字幕、GIF、抽帧与调整，走官方 subprocess 服务，零运行时依赖。",
   "type": "module",
   "main": "lib/index.js",
