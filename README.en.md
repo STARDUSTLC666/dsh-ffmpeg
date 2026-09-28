@@ -12,7 +12,7 @@ DSH (DeepSeek Harness) video-processing plugin: seven tools covering probing, cu
 
 Validation host: Harness `0.2.0-rc.1` built from official sources (commit `407e65c8`) with Node `24.16.0` on 2026-09-28. All 96 plugin tests pass in an isolated environment; all 18 plugins mount together in one host registering 10 tools, with tool schemas and health-check contracts passing. No live ports or external services were exercised in this round.
 
-2026-09-13 fix: retain the service receiver when calling `subprocess.spawn`, preventing failures caused by passing the method as an unbound callback. Verified with official `0.1.5-rc.1` and `0.1.5-rc.2` on Node `24.16.0`. FFmpeg/ffprobe version checks and probing a real MP4 pass. This fixes the tool invocation failure reported in [#3](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues/3).
+2026-09-13 fix: retain the service receiver when calling `subprocess.spawn`, preventing failures caused by passing the method as an unbound callback. Verified against a real isolated host subprocess service. FFmpeg/ffprobe version checks and probing a real MP4 pass. This fixes the tool invocation failure reported in [#3](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues/3).
 
 ## Installation
 
