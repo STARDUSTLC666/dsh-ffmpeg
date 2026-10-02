@@ -1,97 +1,44 @@
-[English](README.en.md)
-
 # dsh-ffmpeg
 
-> **你的 agent 会剪视频了**：探测/剪辑/拼接/转码/字幕/抽帧/GIF/变速旋转调音，十个工具一条命令。
+[English](README.en.md)
 
-![npm version](https://img.shields.io/npm/v/dsh-ffmpeg?label=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dm/dsh-ffmpeg) ![license](https://img.shields.io/npm/l/dsh-ffmpeg) ![stars](https://img.shields.io/github/stars/STARDUSTLC666/dsh-ffmpeg?style=social)
+用自然语言调用 FFmpeg，处理已有音视频文件。
 
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://img.shields.io/npm/dm/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
+## 功能
 
-DSH（DeepSeek Harness）视频处理工具插件：十个工具：探测、剪辑、拼接、转码、字幕、提取、GIF、抽帧、调整（变速/音量/静音/旋转）与自检，全部由 ffmpeg/ffprobe 完成。
-
-## 兼容性
-
-验证宿主：官方源码构建的 Harness `0.2.0-rc.1`（commit `407e65c8`）+ Node `24.16.0`（2026-09-28）。96 项插件测试在隔离环境全部通过；同一个宿主里 18 个插件共同加载，注册 10 个工具，工具 schema 与健康检查契约通过。本轮未启用真实端口与外部服务。
+- 探测媒体信息，裁剪、拼接和压制视频。
+- 添加字幕、生成 GIF、抽取画面。
+- 通过宿主 subprocess 执行命令。
 
 ## 安装
 
-```bash
-dsh plugin --profile web add dsh-ffmpeg
-```
-
-需要本机已安装 ffmpeg（`ffmpeg -version` 能出结果即可）；不在 PATH 上时可用 `ffmpegPath`/`ffprobePath` 显式指定，或设置环境变量 `DSH_FFMPEG_PATH` / `DSH_FFPROBE_PATH`。
-
-## 卸载
+桌面版可在「插件」面板按包名 `dsh-ffmpeg` 安装。已配置 dsh 命令时也可使用：
 
 ```bash
-dsh plugin --profile web remove dsh-ffmpeg
+dsh plugin --profile desktop add dsh-ffmpeg
 ```
 
-卸载后重启 Web 服务。如需彻底清理，可再手动删除自己 profile `cordis.patch.yml` 中覆盖的插件行。
+网页版把命令中的 `desktop` 改为 `web`。安装后重启 DSH。
 
+## 开始使用
 
-## 配置
+准备输入文件后可说：“把这段视频裁成 30 秒，并导出适合分享的 MP4。”
 
-在你自己的 profile 的 `cordis.patch.yml` 里覆盖本插件行（缺省时全部用默认值）：
+## 依赖与配置
 
-```yaml
-- id: ffmpeg
-  name: 'dsh-ffmpeg'
-  config:
-    # ffmpegPath: C:\tools\ffmpeg\bin\ffmpeg.exe   # 非 PATH 时显式指定（也可用 DSH_FFMPEG_PATH）
-    # ffprobePath: C:\tools\ffmpeg\bin\ffprobe.exe # 也可用 DSH_FFPROBE_PATH
-    timeoutMs: 300000                                # 单次操作超时（默认 5 分钟，10 秒 - 2 小时）
-    # overwrite: true                                 # 允许覆盖同名输出（默认自动加 _1/_2 序号）
-```
+需要 FFmpeg / ffprobe；可在配置中指定可执行文件路径。
 
-## 工具一览
+详细配置、工具参数与排错见[使用说明](docs/USAGE.md)。从源码独立开发时，Node 要求以 [package.json](package.json) 为准。
 
-| 工具 | 作用 | 关键参数 |
-| :-- | :-- | :-- |
-| `ffmpeg_probe` | 探测媒体信息（格式/时长/分辨率/帧率/码率/音轨/字幕轨；多视频流时返回完整 videos 列表） | `input` 必填 |
-| `ffmpeg_cut` | 剪辑片段（默认流拷贝秒级，可精确重编码） | `input` 必填；`start`/`end`/`duration` |
-| `ffmpeg_concat` | 拼接 2-20 个片段（同编码流拷贝 / 混合编码重编码；无音轨输入按纯视频拼接） | `inputs` 数组必填 |
-| `ffmpeg_encode` | 转码（B 站 1080p/4K、竖屏 1080p、web-720p 预设 + crf/fps/scale 覆盖） | `input` 必填；`preset` 可选 |
-| `ffmpeg_subtitle` | 字幕烧录（SRT/ASS 硬字幕） | `input`+`subtitle` 必填 |
-| `ffmpeg_extract` | 提取音轨（m4a，非 AAC 自动转 AAC）/ 抽帧序列 / 单帧 / 字幕流 | `input`+`what` 必填 |
-| `ffmpeg_gif` | 视频转高质量 GIF（两遍调色板） | `input` 必填；`fps`/`width`/`duration` 可选 |
-| `ffmpeg_frames` | 批量抽帧给视觉模型读图（定间隔或指定时间点，PNG/JPG） | `input` 必填；`every`/`times` 二选一 |
-| `ffmpeg_adjust` | 变速（音视频同步）/ 音量 / 静音 / 旋转（竖横屏互转），可组合 | `input` 必填；`speed`/`volume`/`mute`/`rotate` 至少一个 |
-| `ffmpeg_health` | 自检 ffmpeg / ffprobe 可执行文件 | 无 |
+## 文档
 
-### 示例
-
-```text
-ffmpeg_probe { input: E:\videos\raw.mp4 }
-ffmpeg_cut { input: E:\videos\raw.mp4, start: 10, end: 30 }
-ffmpeg_encode { input: E:\videos\raw.mp4, preset: bilibili-1080p }
-ffmpeg_subtitle { input: E:\videos\raw.mp4, subtitle: E:\videos\subs.srt }
-ffmpeg_extract { input: E:\videos\raw.webm, what: audio }
-ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
-ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
-```
-
-## 安全设计
-
-- **无 shell**：所有参数以独立 argv 数组传递，用户输入不可能注入命令
-- **进程走 DSH 官方 subprocess 服务**：超时 AbortSignal 会真正触发树级终止（SIGTERM → 强杀，Windows taskkill /T），本插件零运行时依赖
-- **防覆写**：默认不覆盖同名文件（自动加序号），输出与输入相同直接拒绝
-- **超时钳制**：单次操作 10 秒 - 2 小时；探测额外限制 60 秒
-- **参数校验**：时间格式、预设枚举、crf/fps/scale 范围全部前置校验，输入目录、抽帧无扩展名输出等边界也有中文错误/自动修复
-
-## 开发
-
-```bash
-pnpm install
-pnpm test       # 构建 + 102 个测试（含真实 ffmpeg 端到端集成，缺 ffmpeg 自动跳过）
-```
+- [使用与排错](docs/USAGE.md)
+- [更新记录](CHANGELOG.md)
+- [验证范围与历史记录](docs/VALIDATION.md)
+- [问题反馈与功能建议](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues)
 
 ## License
 
-MIT
-
-## 版本记录
-
-- **0.4.3（2026-09-18）**：修复抽帧数到旧帧/清单截断、取消被当成功、取消文案丢原因、`+2dB` 被拒；音轨提取非 AAC 自动转 AAC、concat 混合音轨可用、ffprobe 截断明确报错。测试 102 项。
+[MIT](LICENSE)

@@ -1,92 +1,44 @@
-[中文](README.md)
-
-![npm](https://img.shields.io/npm/v/dsh-ffmpeg) ![downloads](https://img.shields.io/npm/dm/dsh-ffmpeg) ![license](https://img.shields.io/github/license/STARDUSTLC666/dsh-ffmpeg) ![stars](https://img.shields.io/github/stars/STARDUSTLC666/dsh-ffmpeg?style=social)
-
 # dsh-ffmpeg
 
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+[中文](README.md)
 
-DSH (DeepSeek Harness) video-processing plugin: seven tools covering probing, cutting, concatenation, transcoding, subtitles, extraction and GIF creation — all powered by ffmpeg/ffprobe.
+Use FFmpeg to process existing audio and video files through natural-language requests.
 
-## Compatibility
+[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://img.shields.io/npm/dm/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
-Validation host: Harness `0.2.0-rc.1` built from official sources (commit `407e65c8`) with Node `24.16.0` on 2026-09-28. All 96 plugin tests pass in an isolated environment; all 18 plugins mount together in one host registering 10 tools, with tool schemas and health-check contracts passing. No live ports or external services were exercised in this round.
+## What it does
 
-2026-09-13 fix: retain the service receiver when calling `subprocess.spawn`, preventing failures caused by passing the method as an unbound callback. Verified against a real isolated host subprocess service. FFmpeg/ffprobe version checks and probing a real MP4 pass. This fixes the tool invocation failure reported in [#3](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues/3).
+- Inspect media and trim, join or transcode video.
+- Add subtitles, create GIFs and extract frames.
+- Execute commands through the host subprocess service.
 
-## Installation
+## Install
 
-```bash
-dsh plugin --profile web add dsh-ffmpeg
-```
-
-ffmpeg must be installed locally (`ffmpeg -version` should work); use `ffmpegPath` / `ffprobePath`, or the `DSH_FFMPEG_PATH` / `DSH_FFPROBE_PATH` environment variables, when it is not on PATH.
-
-## Uninstall
+In DSH Desktop, install `dsh-ffmpeg` from the Plugins panel. If the bundled dsh command is available:
 
 ```bash
-dsh plugin --profile web remove dsh-ffmpeg
+dsh plugin --profile desktop add dsh-ffmpeg
 ```
 
-Then restart the web service. To clean up fully, also remove the plugin entry from your profile `cordis.patch.yml` if you overrode it.
+For the web version, replace `desktop` with `web`. Restart DSH after installation.
 
+## Start using it
 
-## Configuration
+Provide an input file and ask: “Trim this video to 30 seconds and export a shareable MP4.”
 
-Override the plugin row in your profile's `cordis.patch.yml` (defaults apply when absent):
+## Requirements and configuration
 
-```yaml
-- id: ffmpeg
-  name: 'dsh-ffmpeg'
-  config:
-    # ffmpegPath: C:\tools\ffmpeg\bin\ffmpeg.exe   # explicit path (or DSH_FFMPEG_PATH)
-    # ffprobePath: C:\tools\ffmpeg\bin\ffprobe.exe # or DSH_FFPROBE_PATH
-    timeoutMs: 300000                                # per-operation timeout (default 5 min, 10s - 2h)
-    # overwrite: true                                 # allow overwriting outputs (default auto-suffix _1/_2)
-```
+Requires FFmpeg and ffprobe. Executable paths can be configured.
 
-## Tools
+Detailed configuration, tool arguments and troubleshooting are in the [usage guide](docs/USAGE.en.md). For standalone development, follow the Node requirement in [package.json](package.json).
 
-| Tool | Purpose | Key parameters |
-| :-- | :-- | :-- |
-| `ffmpeg_probe` | Probe media info (format/duration/resolution/fps/bitrate/audio/subtitle streams; multi-video files return a full videos list) | `input` required |
-| `ffmpeg_cut` | Cut a clip (stream copy by default, accurate re-encode optional) | `input` required; `start`/`end`/`duration` |
-| `ffmpeg_concat` | Concatenate 2-20 clips (stream copy for identical codecs / re-encode for mixed; video-only when any input has no audio) | `inputs` array required |
-| `ffmpeg_encode` | Transcode with presets (bilibili 1080p/4K, vertical 1080p, web-720p) plus crf/fps/scale overrides | `input` required; `preset` optional |
-| `ffmpeg_subtitle` | Burn subtitles (SRT/ASS hard subs) | `input` + `subtitle` required |
-| `ffmpeg_extract` | Extract audio (m4a; non-AAC is auto-transcoded to AAC) / frame sequences / single frame / subtitle stream | `input` + `what` required |
-| `ffmpeg_gif` | Video to high-quality GIF (two-pass palette) | `input` required; `fps`/`width`/`duration` optional |
+## Documentation
 
-### Examples
-
-```text
-ffmpeg_probe { input: E:\videos\raw.mp4 }
-ffmpeg_cut { input: E:\videos\raw.mp4, start: 10, end: 30 }
-ffmpeg_encode { input: E:\videos\raw.mp4, preset: bilibili-1080p }
-ffmpeg_subtitle { input: E:\videos\raw.mp4, subtitle: E:\videos\subs.srt }
-ffmpeg_extract { input: E:\videos\raw.webm, what: audio }
-ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
-```
-
-## Safety
-
-- **No shell**: every argument is passed as its own argv element — user input cannot inject commands
-- **Runs on the official DSH subprocess service**: the timeout AbortSignal now really drives tree-scoped termination (SIGTERM → kill; taskkill /T on Windows), zero runtime dependencies
-- **No accidental overwrites**: existing outputs get auto-suffixed; output == input is rejected
-- **Timeout clamps**: per-operation 10s - 2h; probes additionally capped at 60s
-- **Input validation**: time formats, preset enums, crf/fps/scale ranges are validated up front; directory inputs are rejected and extension-less frame-sequence outputs are auto-fixed
-
-## Development
-
-```bash
-pnpm install
-pnpm test       # build + 102 tests, including a real-ffmpeg end-to-end suite (auto-skipped without ffmpeg)
-```
+- [Usage and troubleshooting](docs/USAGE.en.md)
+- [Changelog](CHANGELOG.md)
+- [Validation scope and history](docs/VALIDATION.md)
+- [Report a problem or suggest a feature](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues)
 
 ## License
 
-MIT
-
-## Changelog
-
-- **0.4.3 (2026-09-18)**: 修复抽帧数到旧帧/清单截断、取消被当成功、取消文案丢原因、`+2dB` 被拒; 音轨提取非 AAC 自动转 AAC、concat 混合音轨可用、ffprobe 截断明确报错. 测试 102 项. 
+[MIT](LICENSE)

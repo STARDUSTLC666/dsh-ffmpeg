@@ -1,5 +1,5 @@
 /**
- * 文档漂移守卫：README（中英）声明的测试数量必须与 test/*.test.mjs 的实际声明数一致。
+ * 文档漂移守卫：使用说明（中英）声明的测试数量必须与 test/*.test.mjs 的实际声明数一致。
  * 统计口径是「顶层 test(...) 声明数」——本仓库所有用例都是平铺顶层声明，与 node --test
  * 的 tests 统计一致（含 skip 的声明也会被 node 计入 tests）。
  */
@@ -22,17 +22,17 @@ function countDeclaredTests() {
   return total
 }
 
-/** 从 README 的 pnpm test 注释里取测试数量。 */
+/** 从使用说明的 pnpm test 注释里取测试数量。 */
 function readmeTestCount(file, pattern) {
   const match = readFileSync(join(rootDir, file), 'utf8').match(pattern)
   assert.ok(match, file + ' 应声明测试数量（pnpm test 注释）')
   return Number(match[1])
 }
 
-test('README 中英声明的测试数量与实际用例数一致', () => {
+test('使用说明中英声明的测试数量与实际用例数一致', () => {
   const actual = countDeclaredTests()
-  const zh = readmeTestCount('README.md', /构建 \+ (\d+)\s*个测试/)
-  const en = readmeTestCount('README.en.md', /build \+ (\d+)\s*tests/)
-  assert.equal(zh, actual, 'README.md 写的 ' + zh + ' 个测试，实际 ' + actual + ' 个')
-  assert.equal(en, actual, 'README.en.md says ' + en + ' tests, actual ' + actual)
+  const zh = readmeTestCount('docs/USAGE.md', /构建 \+ (\d+)\s*个测试/)
+  const en = readmeTestCount('docs/USAGE.en.md', /build \+ (\d+)\s*tests/)
+  assert.equal(zh, actual, '中文使用说明写的 ' + zh + ' 个测试，实际 ' + actual + ' 个')
+  assert.equal(en, actual, 'English usage guide says ' + en + ' tests, actual ' + actual)
 })
