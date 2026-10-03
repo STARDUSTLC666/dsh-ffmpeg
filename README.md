@@ -2,6 +2,8 @@
 
 [English](README.en.md)
 
+![dsh-ffmpeg 鲸鱼娘插件封面](https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/assets/cover-whale-girl.png)
+
 用自然语言调用 FFmpeg，处理已有音视频文件。
 
 [![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://img.shields.io/npm/dm/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg)
