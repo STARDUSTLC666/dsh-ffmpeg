@@ -6,7 +6,7 @@
 
 Use FFmpeg to process existing audio and video files through natural-language requests.
 
-[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://img.shields.io/npm/dm/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg)
+[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
 ## What it does
 
