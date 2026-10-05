@@ -7,8 +7,8 @@ import { existsSync, statSync } from 'node:fs'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 
 /** 校验输入文件存在且是文件；返回绝对路径。 */
-export function assertInputFile(input: string): string {
-  const absolute = resolve(input)
+export function assertInputFile(input: string, cwd: string = process.cwd()): string {
+  const absolute = resolve(cwd, input)
   if (!existsSync(absolute)) {
     throw new Error('输入文件不存在：' + input)
   }
@@ -28,10 +28,10 @@ export function sanitizeName(name: string): string {
  * 决定输出路径：缺省时放在输入同目录，名字 = 输入名 + suffix + ext。
  * 目标已存在且不允许覆写时自动追加 _1/_2…。
  */
-export function resolveOutputPath(input: string, explicit: string | undefined, suffix: string, ext: string, overwrite: boolean): string {
+export function resolveOutputPath(input: string, explicit: string | undefined, suffix: string, ext: string, overwrite: boolean, cwd: string = process.cwd()): string {
   let target: string
   if (explicit !== undefined && explicit.trim() !== '') {
-    target = resolve(explicit.trim())
+    target = resolve(cwd, explicit.trim())
   } else {
     const base = basename(input, extname(input))
     target = join(dirname(input), sanitizeName(base) + suffix + ext)

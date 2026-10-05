@@ -2,6 +2,10 @@
 
 [返回简介](../README.md) · [更新记录](../CHANGELOG.md) · [验证记录](VALIDATION.md)
 
+## 本次改进
+
+相对文件路径以当前会话工作区为基准。提供 start / duration 时必须是合法时间，非法输入不会退回默认值或意外处理整段视频。
+
 ## 安装
 
 ```bash
@@ -71,7 +75,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 102 个测试
+pnpm test       # 构建 + 104 个测试
 ```
 
 ## License

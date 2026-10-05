@@ -15,6 +15,13 @@ export interface ContentBlock {
 /** v0.1.2-rc.1 工具执行上下文中本插件需要的公共最小面。 */
 export interface FfmpegToolRunContext {
     readonly signal: AbortSignal;
+    readonly agent?: {
+        session?: {
+            header?: {
+                cwd?: string;
+            };
+        };
+    };
 }
 /** 注册给 ctx.tools.register 的原始工具定义。 */
 export interface FfmpegToolDefinition {

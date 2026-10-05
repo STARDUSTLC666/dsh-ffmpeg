@@ -1,6 +1,6 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "用自然语言调用 FFmpeg，处理已有音视频文件。",
   "type": "module",
   "main": "lib/index.js",

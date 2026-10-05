@@ -2,6 +2,10 @@
 
 [Overview](../README.en.md) · [Changelog](../CHANGELOG.md) · [Validation](VALIDATION.md)
 
+## Current improvements
+
+Relative paths resolve against the current session workspace. Explicit start / duration values must be valid; invalid values never silently fall back to full-video processing.
+
 ## Installation
 
 ```bash
@@ -67,7 +71,7 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # build + 102 tests
+pnpm test       # build + 104 tests
 ```
 
 ## License
