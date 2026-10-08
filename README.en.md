@@ -8,6 +8,8 @@ Use FFmpeg to process existing audio and video files through natural-language re
 
 [![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
+Feedback and contributions are welcome: report [issues](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues) or submit [pull requests](https://github.com/STARDUSTLC666/dsh-ffmpeg/pulls).
+
 ## What it does
 
 - Inspect media and trim, join or transcode video.

@@ -8,6 +8,8 @@
 
 [![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
+欢迎使用，遇到问题或有改进建议，请提交 [issues](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues) 和 [PR](https://github.com/STARDUSTLC666/dsh-ffmpeg/pulls)。
+
 ## 功能
 
 - 探测媒体信息，裁剪、拼接和压制视频。
