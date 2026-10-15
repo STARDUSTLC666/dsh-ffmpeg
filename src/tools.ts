@@ -284,11 +284,14 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
 
   const concat: FfmpegToolDefinition = {
     name: 'ffmpeg_concat',
-    description: '拼接多个视频片段。默认要求编码一致（流拷贝，秒级完成）；reencode=true 时统一重编码拼接（慢；先 probe 各输入，任一输入无音轨就按纯视频拼接，避免音轨绑定失败）。inputs 为 2-20 个文件路径。',
+    description: '拼接 2-20 个视频片段。默认同编码流拷贝；reencode=true 将不同分辨率、帧率和像素比例统一到第一个片段的画布，等比补边；可指定 width/height/fps。混合有声与无声素材时只为无声段补静音，保留其他段的声音。',
     parameters: compileParameters({
       inputs: { type: 'array', items: { type: 'string' }, required: true, description: '输入文件路径数组（2-20 个，必填）。' },
       output: { type: 'string', description: '输出路径（可选，默认第一个输入同目录加 .concat 后缀）。' },
       reencode: { type: 'boolean', description: '是否统一重编码拼接（默认 false=流拷贝）。' },
+      width: { type: 'integer', description: '重编码目标宽度；与 height 一起指定，2-8192 的偶数。默认采用首段宽度。' },
+      height: { type: 'integer', description: '重编码目标高度；与 width 一起指定，2-8192 的偶数。默认采用首段高度。' },
+      fps: { type: 'number', description: '重编码目标帧率 1-240。默认采用首段帧率，无法识别时用 30。' },
     }),
     output: {
       schema: produceSchema,
@@ -304,8 +307,18 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       if (inputs.length > 20) throw new Error('inputs 最多 20 个文件（当前 ' + inputs.length + ' 个）。')
       const absolute = inputs.map(input => assertInputFile(input, executionCwd(exec)))
       const reencode = args.reencode === true
+      const requestedWidth = optionalNumber(args, 'width')
+      const requestedHeight = optionalNumber(args, 'height')
+      const requestedFps = optionalNumber(args, 'fps')
+      if ([requestedWidth, requestedHeight, requestedFps].some(value => value !== undefined) && !reencode) throw new Error('width/height/fps 需要 reencode=true。')
+      if ((requestedWidth === undefined) !== (requestedHeight === undefined)) throw new Error('width 与 height 需要一起指定。')
+      for (const [name, value] of [['width', requestedWidth], ['height', requestedHeight]] as const) {
+        if (value !== undefined && (!Number.isInteger(value) || value < 2 || value > 8192 || value % 2 !== 0)) throw new Error(name + ' 必须是 2-8192 的偶数。')
+      }
+      if (requestedFps !== undefined && (!Number.isFinite(requestedFps) || requestedFps < 1 || requestedFps > 240)) throw new Error('fps 必须在 1-240 之间。')
       const firstExt = extname(absolute[0]) || '.mp4'
       const output = resolveOutputPath(absolute[0], optionalString(args, 'output'), '.concat', firstExt, cfg.overwrite, executionCwd(exec))
+      let normalized: { width: number; height: number; fps: number } | undefined
       if (!reencode) {
         const listPath = join(tmpdir(), 'dsh-ffmpeg-concat-' + Date.now() + '-' + randomUUID().slice(0, 8) + '.txt')
         writeFileSync(listPath, concatListContent(absolute), 'utf8')
@@ -315,18 +328,25 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
           rmSync(listPath, { force: true })
         }
       } else {
-        // concat filter 的 a=1 要求每个输入都含音频轨，否则报 Error binding filtergraph inputs/outputs；先 probe 确认
-        let allHaveAudio = true
+        const media: MediaInfo[] = []
         for (const inputPath of absolute) {
           const probeResult = await runChecked(runner, probeArgs(cfg.ffprobePath, inputPath), Math.min(timeout, 60000), 'ffprobe', exec?.signal)
-          if (parseProbeJson(probeResult.stdout).audio.length === 0) {
-            allHaveAudio = false
-            break
-          }
+          const info = parseProbeJson(probeResult.stdout)
+          if (info.video === null || info.video.width < 1 || info.video.height < 1) throw new Error('拼接输入缺少有效视频画面：' + inputPath)
+          media.push(info)
         }
-        await runChecked(runner, concatArgs(cfg.ffmpegPath, { inputs: absolute, output, overwrite: cfg.overwrite, reencode: true, hasAudio: allHaveAudio }), timeout, 'ffmpeg 拼接', exec?.signal)
+        const first = media[0].video!
+        normalized = { width: requestedWidth ?? Math.ceil(first.width / 2) * 2, height: requestedHeight ?? Math.ceil(first.height / 2) * 2,
+          fps: requestedFps ?? (first.fps !== null && first.fps >= 1 && first.fps <= 240 ? first.fps : 30) }
+        const anyAudio = media.some(info => info.audio.length > 0)
+        const audioInputs = media.map((info, index) => {
+          const duration = info.video!.durationSeconds ?? info.durationSeconds ?? 0
+          if (anyAudio && info.audio.length === 0 && duration <= 0) throw new Error('无法确定无声片段的时长，不能安全补齐静音：' + absolute[index])
+          return { present: info.audio.length > 0, duration }
+        })
+        await runChecked(runner, concatArgs(cfg.ffmpegPath, { inputs: absolute, output, overwrite: cfg.overwrite, reencode: true, normalize: normalized, audioInputs }), timeout, 'ffmpeg 拼接', exec?.signal)
       }
-      return { output, count: absolute.length, reencode }
+      return { output, count: absolute.length, reencode, ...(normalized === undefined ? {} : { normalized }) }
     },
     timeoutMs: timeout,
   }

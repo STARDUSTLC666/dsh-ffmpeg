@@ -32,7 +32,7 @@ test('concatArgs 重编码用 filter_complex', () => {
   const argv = concatArgs('ffmpeg', { inputs: ['a.mp4', 'b.mp4', 'c.mp4'], output: 'out.mp4', overwrite: true, reencode: true })
   assert.equal(argv[1], '-y')
   assert.deepEqual(argv.slice(2, 8), ['-i', 'a.mp4', '-i', 'b.mp4', '-i', 'c.mp4'])
-  assert.ok(argv.includes('concat=n=3:v=1:a=1'))
+  assert.ok(argv.some(part => part.includes('concat=n=3:v=1:a=1')))
 })
 
 test('concatListContent 转义反斜杠与单引号', () => {
@@ -105,8 +105,8 @@ test('extractArgs audio 回退重编码：transcodeAudio=true 用 -c:a aac', () 
 
 test('concatArgs 重编码：任一输入无音轨时用 a=0，全有才 a=1', () => {
   const mixed = concatArgs('ffmpeg', { inputs: ['a.mp4', 'b.mp4'], output: 'out.mp4', overwrite: false, reencode: true, hasAudio: false })
-  assert.ok(mixed.includes('concat=n=2:v=1:a=0'), '缺音轨输入应走 a=0')
-  assert.ok(!mixed.includes('concat=n=2:v=1:a=1'))
+  assert.ok(mixed.some(part => part.includes('concat=n=2:v=1:a=0')), '显式不保留音轨时应走 a=0')
+  assert.ok(!mixed.some(part => part.includes('concat=n=2:v=1:a=1')))
   const all = concatArgs('ffmpeg', { inputs: ['a.mp4', 'b.mp4'], output: 'out.mp4', overwrite: false, reencode: true, hasAudio: true })
-  assert.ok(all.includes('concat=n=2:v=1:a=1'))
+  assert.ok(all.some(part => part.includes('concat=n=2:v=1:a=1')))
 })

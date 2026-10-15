@@ -42,7 +42,7 @@ dsh plugin --profile web remove dsh-ffmpeg
 | :-- | :-- | :-- |
 | `ffmpeg_probe` | 探测媒体信息（格式/时长/分辨率/帧率/码率/音轨/字幕轨；多视频流时返回完整 videos 列表） | `input` 必填 |
 | `ffmpeg_cut` | 剪辑片段（默认流拷贝秒级，可精确重编码） | `input` 必填；`start`/`end`/`duration` |
-| `ffmpeg_concat` | 拼接 2-20 个片段（同编码流拷贝 / 混合编码重编码；无音轨输入按纯视频拼接） | `inputs` 数组必填 |
+| `ffmpeg_concat` | 拼接 2-20 个片段；重编码时等比补边到同一画布，混合无声片段会补静音并保留其余原声 | `inputs` 数组必填；`reencode=true` 时可用 `width` + `height`、`fps` 指定输出 |
 | `ffmpeg_encode` | 转码（B 站 1080p/4K、竖屏 1080p、web-720p 预设 + crf/fps/scale 覆盖） | `input` 必填；`preset` 可选 |
 | `ffmpeg_subtitle` | 字幕烧录（SRT/ASS 硬字幕） | `input`+`subtitle` 必填 |
 | `ffmpeg_extract` | 提取音轨（m4a，非 AAC 自动转 AAC）/ 抽帧序列 / 单帧 / 字幕流 | `input`+`what` 必填 |
@@ -75,7 +75,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 104 个测试
+pnpm test       # 构建 + 110 个测试
 ```
 
 ## License

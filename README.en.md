@@ -13,6 +13,7 @@ Feedback and contributions are welcome: report [issues](https://github.com/STARD
 ## What it does
 
 - Inspect media and trim, join or transcode video.
+- Fit clips with different sizes and frame rates to one canvas; silent clips receive silence without muting the other clips.
 - Add subtitles, create GIFs and extract frames.
 - Execute commands through the host subprocess service.
 

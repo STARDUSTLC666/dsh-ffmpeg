@@ -51,6 +51,10 @@ export interface ConcatSpec {
   reencode: boolean
   /** 所有输入都含音频流（probe 结果）：只有全有才能用 a=1，否则 concat filter 绑定失败。 */
   hasAudio?: boolean
+  /** 统一到目标画布；等比缩放并补边，不拉伸画面。 */
+  normalize?: { width: number; height: number; fps: number }
+  /** 缺音轨片段用等长静音补齐，保留其余片段的原声。 */
+  audioInputs?: Array<{ present: boolean; duration: number }>
 }
 
 /** 拼接：同编码流拷贝走 concat demuxer（需 list 文件），否则 filter_complex 重编码。 */
@@ -61,10 +65,35 @@ export function concatArgs(ffmpeg: string, spec: ConcatSpec): string[] {
   }
   const parts: string[] = [ffmpeg, flag]
   for (const input of spec.inputs) parts.push('-i', input)
-  parts.push('-filter_complex', 'concat=n=' + spec.inputs.length + ':v=1:a=' + (spec.hasAudio === false ? '0' : '1'))
-  // a=0 时 filter 没有音频 pad，但 ffmpeg 仍可能自动选中输入音轨；用 -an 明确只要视频
-  if (spec.hasAudio === false) parts.push('-an')
-  parts.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-c:a', 'aac', spec.output)
+  const hasAudio = spec.audioInputs?.some(input => input.present) ?? spec.hasAudio !== false
+  const filters: string[] = []
+  const pads: string[] = []
+  spec.inputs.forEach((_input, i) => {
+    const steps: string[] = []
+    if (spec.normalize !== undefined) {
+      const { width, height, fps } = spec.normalize
+      // First convert anamorphic pixels to square pixels, then fit the shared canvas.
+      steps.push('scale=trunc(iw*sar/2)*2:ih', 'setsar=1',
+        'scale=' + width + ':' + height + ':force_original_aspect_ratio=decrease:force_divisible_by=2',
+        'pad=' + width + ':' + height + ':(ow-iw)/2:(oh-ih)/2', 'fps=' + fps)
+    }
+    steps.push('setsar=1', 'format=yuv420p', 'setpts=PTS-STARTPTS')
+    filters.push('[' + i + ':v:0]' + steps.join(',') + '[v' + i + ']')
+    pads.push('[v' + i + ']')
+    if (hasAudio) {
+      const audio = spec.audioInputs?.[i]
+      const source = audio?.present === false
+        ? 'anullsrc=r=48000:cl=stereo,atrim=duration=' + fmtSeconds(audio.duration)
+        : '[' + i + ':a:0]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo'
+      filters.push(source + ',asetpts=PTS-STARTPTS[a' + i + ']')
+      pads.push('[a' + i + ']')
+    }
+  })
+  filters.push(pads.join('') + 'concat=n=' + spec.inputs.length + ':v=1:a=' + (hasAudio ? '1[vout][aout]' : '0[vout]'))
+  parts.push('-filter_complex', filters.join(';'), '-map', '[vout]')
+  if (hasAudio) parts.push('-map', '[aout]', '-c:a', 'aac')
+  else parts.push('-an')
+  parts.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', spec.output)
   return parts
 }
 
@@ -192,13 +221,13 @@ export interface GifSpec {
 /** GIF 第一遍：调色板生成（palettegen）。 */
 export function gifPaletteArgs(ffmpeg: string, spec: GifSpec): string[] {
   const filter = 'fps=' + spec.fps + ',scale=' + spec.width + ':-1:flags=lanczos,palettegen'
-  return [ffmpeg, '-y', '-i', spec.input, '-ss', fmtSeconds(spec.start), '-t', fmtSeconds(spec.duration), '-vf', filter, spec.palettePath]
+  return [ffmpeg, '-y', '-ss', fmtSeconds(spec.start), '-t', fmtSeconds(spec.duration), '-i', spec.input, '-vf', filter, '-frames:v', '1', '-update', '1', spec.palettePath]
 }
 
 /** GIF 第二遍：paletteuse 合成。 */
 export function gifUseArgs(ffmpeg: string, spec: GifSpec): string[] {
   const filter = 'fps=' + spec.fps + ',scale=' + spec.width + ':-1:flags=lanczos[x];[x][1:v]paletteuse'
-  return [ffmpeg, overwriteFlag(spec.overwrite), '-i', spec.input, '-ss', fmtSeconds(spec.start), '-t', fmtSeconds(spec.duration), '-i', spec.palettePath, '-filter_complex', filter, spec.output]
+  return [ffmpeg, overwriteFlag(spec.overwrite), '-ss', fmtSeconds(spec.start), '-t', fmtSeconds(spec.duration), '-i', spec.input, '-i', spec.palettePath, '-filter_complex', filter, spec.output]
 }
 
 export type RotateDeg = 90 | 180 | 270

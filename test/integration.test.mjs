@@ -193,7 +193,7 @@ test('端到端：concat 重编码拼接「有音轨 + 无音轨」', { skip: !h
     assert.ok(existsSync(out.output), '有音轨 + 无音轨重编码拼接应成功')
     const info = await probe.execute({ input: out.output })
     assert.equal(info.video.width, 320)
-    assert.equal(info.audio.length, 0, '缺音轨输入时按 a=0 纯视频拼接')
+    assert.equal(info.audio.length, 1, '缺音轨片段补静音，保留有声片段的声音')
     assert.ok(info.durationSeconds >= 3.5 && info.durationSeconds <= 4.6)
   } finally {
     rmSync(work, { recursive: true, force: true })

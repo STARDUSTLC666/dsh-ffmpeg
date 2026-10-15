@@ -28,6 +28,17 @@ export interface ConcatSpec {
     reencode: boolean;
     /** 所有输入都含音频流（probe 结果）：只有全有才能用 a=1，否则 concat filter 绑定失败。 */
     hasAudio?: boolean;
+    /** 统一到目标画布；等比缩放并补边，不拉伸画面。 */
+    normalize?: {
+        width: number;
+        height: number;
+        fps: number;
+    };
+    /** 缺音轨片段用等长静音补齐，保留其余片段的原声。 */
+    audioInputs?: Array<{
+        present: boolean;
+        duration: number;
+    }>;
 }
 /** 拼接：同编码流拷贝走 concat demuxer（需 list 文件），否则 filter_complex 重编码。 */
 export declare function concatArgs(ffmpeg: string, spec: ConcatSpec): string[];

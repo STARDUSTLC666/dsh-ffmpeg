@@ -315,7 +315,7 @@ test('ffmpeg_extract audio：流拷贝失败自动回退转 AAC', async () => {
   assert.deepEqual(runner.calls[1].argv, ['ffmpeg', '-y', '-i', input, '-vn', '-c:a', 'aac', join(dir, 'video.audio.m4a')])
 })
 
-test('ffmpeg_concat 重编码：probe 到输入无音轨时用 a=0', async () => {
+test('ffmpeg_concat 重编码：无声输入补静音，保留其他输入的音轨', async () => {
   const second = join(dir, 'no-audio.mp4')
   writeFileSync(second, 'x')
   const calls = []
@@ -325,9 +325,9 @@ test('ffmpeg_concat 重编码：probe 到输入无音轨时用 a=0', async () =>
       if (argv[0] === 'ffprobe') {
         const noAudio = argv[argv.length - 1] === second
         const streams = noAudio
-          ? [{ codec_type: 'video' }]
-          : [{ codec_type: 'video' }, { codec_type: 'audio', codec_name: 'aac' }]
-        return { exitCode: 0, signal: null, stdout: JSON.stringify({ streams }), stderr: '' }
+          ? [{ codec_type: 'video', width: 640, height: 360 }]
+          : [{ codec_type: 'video', width: 640, height: 360 }, { codec_type: 'audio', codec_name: 'aac' }]
+        return { exitCode: 0, signal: null, stdout: JSON.stringify({ streams, format: { duration: '2' } }), stderr: '' }
       }
       return { exitCode: 0, signal: null, stdout: '', stderr: '' }
     },
@@ -337,7 +337,27 @@ test('ffmpeg_concat 重编码：probe 到输入无音轨时用 a=0', async () =>
   assert.equal(value.reencode, true)
   const ffmpegCall = calls.find((argv) => argv[0] === 'ffmpeg')
   assert.ok(ffmpegCall, '应执行 ffmpeg')
-  assert.ok(ffmpegCall.includes('concat=n=2:v=1:a=0'))
+  assert.ok(ffmpegCall.some(part => part.includes('concat=n=2:v=1:a=1')))
+  assert.ok(ffmpegCall.some(part => part.includes('anullsrc=r=48000:cl=stereo,atrim=duration=2.000')))
+})
+
+test('concat rejects invalid canvas/fps before invoking a process', async () => {
+  const runner = makeRunner()
+  const concat = buildFfmpegTools(cfg, runner).find(t => t.name === 'ffmpeg_concat')
+  for (const values of [{ width: 96 }, { width: 95, height: 160 }, { fps: 0 }, { fps: 241 }]) {
+    await assert.rejects(concat.execute({ inputs: [input, input], reencode: true, ...values }), /width|height|fps/)
+  }
+  await assert.rejects(concat.execute({ inputs: [input, input], width: 96, height: 160 }), /reencode=true/)
+  assert.equal(runner.calls.length, 0)
+})
+
+test('concat rejects missing video and unknown silent duration instead of writing a broken output', async () => {
+  const empty = makeRunner([{ stdout: JSON.stringify({ streams: [] }) }])
+  await assert.rejects(buildFfmpegTools(cfg, empty).find(t => t.name === 'ffmpeg_concat').execute({ inputs: [input, input], reencode: true }), /有效视频/)
+  const streams = [{ codec_type: 'video', width: 640, height: 360 }]
+  const unknown = makeRunner([{ stdout: JSON.stringify({ streams: [...streams, { codec_type: 'audio' }] }) }, { stdout: JSON.stringify({ streams }) }])
+  await assert.rejects(buildFfmpegTools(cfg, unknown).find(t => t.name === 'ffmpeg_concat').execute({ inputs: [input, input], reencode: true }), /无声片段的时长/)
+  assert.equal(unknown.calls.length, 2, 'validation must not invoke ffmpeg')
 })
 
 test('cleanup', () => { rmSync(dir, { recursive: true, force: true }) })
