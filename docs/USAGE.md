@@ -2,6 +2,10 @@
 
 [返回简介](../README.md) · [更新记录](../CHANGELOG.md) · [验证记录](VALIDATION.md)
 
+## 抽帧与源文件保护
+
+默认帧序列写入 `<输入名>-frames/run-*/`，每次使用新目录。显式指定序列时，已有输出需要 `overwrite=true`；即使允许覆盖，也不能覆盖任何输入或字幕源及其文件别名。
+
 ## 本次改进
 
 相对文件路径以当前会话工作区为基准。提供 start / duration 时必须是合法时间，非法输入不会退回默认值或意外处理整段视频。
@@ -75,7 +79,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 110 个测试
+pnpm test       # 构建 + 115 个测试
 ```
 
 ## License

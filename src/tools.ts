@@ -17,7 +17,7 @@ import {
 import { type ResolvedFfmpegConfig } from './config.js'
 import { type ProcessRunner, type RunResult } from './exec.js'
 import { parseProbeJson, type MediaInfo } from './ffprobe.js'
-import { assertInputFile, resolveOutputPath, sanitizeName } from './paths.js'
+import { assertInputFile, resolveOutputPath, resolveFramePattern, sanitizeName } from './paths.js'
 import { parseTimeArg } from './config.js'
 
 /** 模型可见的内容块。 */
@@ -317,7 +317,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       }
       if (requestedFps !== undefined && (!Number.isFinite(requestedFps) || requestedFps < 1 || requestedFps > 240)) throw new Error('fps 必须在 1-240 之间。')
       const firstExt = extname(absolute[0]) || '.mp4'
-      const output = resolveOutputPath(absolute[0], optionalString(args, 'output'), '.concat', firstExt, cfg.overwrite, executionCwd(exec))
+      const output = resolveOutputPath(absolute, optionalString(args, 'output'), '.concat', firstExt, cfg.overwrite, executionCwd(exec))
       let normalized: { width: number; height: number; fps: number } | undefined
       if (!reencode) {
         const listPath = join(tmpdir(), 'dsh-ffmpeg-concat-' + Date.now() + '-' + randomUUID().slice(0, 8) + '.txt')
@@ -421,7 +421,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       const args = asRecord(rawArgs)
       const input = assertInputFile(requiredString(args, 'input', '输入视频'), executionCwd(exec))
       const subtitlePath = assertInputFile(requiredString(args, 'subtitle', '字幕文件'), executionCwd(exec))
-      const output = resolveOutputPath(input, optionalString(args, 'output'), '.sub', extname(input) || '.mp4', cfg.overwrite, executionCwd(exec))
+      const output = resolveOutputPath([input, subtitlePath], optionalString(args, 'output'), '.sub', extname(input) || '.mp4', cfg.overwrite, executionCwd(exec))
       await runChecked(runner, subtitleArgs(cfg.ffmpegPath, { input, subtitle: subtitlePath, output, overwrite: cfg.overwrite }), timeout, 'ffmpeg 字幕', exec?.signal)
       return { output, mode: 'burn' }
     },
@@ -465,17 +465,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
       } else if (what === 'subtitle') {
         output = resolveOutputPath(input, optionalString(args, 'output'), '.subtitle', '.srt', cfg.overwrite, executionCwd(exec))
       } else {
-        const rawOutput = optionalString(args, 'output'); const explicit = rawOutput === undefined ? undefined : resolve(executionCwd(exec), rawOutput)
-        if (explicit !== undefined) {
-          if (explicit.includes('%')) {
-            output = explicit
-          } else {
-            const explicitExt = extname(explicit)
-            output = explicitExt === '' ? explicit + '-%03d.png' : explicit.slice(0, -explicitExt.length) + '-%03d' + explicitExt
-          }
-        } else {
-          output = join(dirname(input), sanitizeName(basename(input, extname(input))) + '-%03d.png')
-        }
+        output = resolveFramePattern(input, optionalString(args, 'output'), cfg.overwrite, executionCwd(exec))
       }
       const spec = { input, what: what as ExtractWhat, output, overwrite: cfg.overwrite, start, duration, fps, streamIndex }
       try {

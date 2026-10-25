@@ -2,8 +2,12 @@
 export declare function assertInputFile(input: string, cwd?: string): string;
 /** 清洗文件名中的危险字符。 */
 export declare function sanitizeName(name: string): string;
+/** Compare every source, resolving junctions/symlinks and detecting hard-link aliases. */
+export declare function assertOutputNotSource(inputs: readonly string[], target: string, cwd?: string): void;
+/** image2's -n does not protect expanded sequence files. Check a supported pattern first. */
+export declare function resolveFramePattern(input: string, explicit: string | undefined, overwrite: boolean, cwd?: string): string;
 /**
  * 决定输出路径：缺省时放在输入同目录，名字 = 输入名 + suffix + ext。
  * 目标已存在且不允许覆写时自动追加 _1/_2…。
  */
-export declare function resolveOutputPath(input: string, explicit: string | undefined, suffix: string, ext: string, overwrite: boolean, cwd?: string): string;
+export declare function resolveOutputPath(input: string | readonly string[], explicit: string | undefined, suffix: string, ext: string, overwrite: boolean, cwd?: string): string;

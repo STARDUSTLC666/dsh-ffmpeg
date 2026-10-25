@@ -2,6 +2,10 @@
 
 [Overview](../README.en.md) · [Changelog](../CHANGELOG.md) · [Validation](VALIDATION.md)
 
+## Frame output and source protection
+
+Default frame sequences go to a fresh `<input>-frames/run-*/` directory. An explicit pattern needs `overwrite=true` for existing outputs; even then it cannot overwrite any input/subtitle source or its file aliases.
+
 ## Current improvements
 
 Relative paths resolve against the current session workspace. Explicit start / duration values must be valid; invalid values never silently fall back to full-video processing.
@@ -71,7 +75,7 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # build + 110 tests
+pnpm test       # build + 115 tests
 ```
 
 ## License
