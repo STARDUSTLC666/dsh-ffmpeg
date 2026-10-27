@@ -31,9 +31,9 @@ test('cordis.patch.yml 插入行名为 dsh-ffmpeg', () => {
   assert.match(patch, /- insert:/)
 })
 
-test('零运行时依赖', () => {
+test('宿主操作无额外引擎依赖，更新控件使用共享库', () => {
   const pkg = require('../package.json')
-  assert.equal(pkg.dependencies, undefined)
+  assert.deepEqual(pkg.dependencies, { '@stardustlc/dsh-updates': '0.1.0' })
 })
 
 test('名称与版本正确', () => {

@@ -4,6 +4,12 @@
 
 [历史英文记录](docs/CHANGELOG.en.md)
 
+## 0.6.0 (2026-10-26)
+
+- Add this plugin’s own update controls and independent preferences. Automatic installation stays off until explicitly enabled.
+- Confirm manual installs, preserve local sources and disabled state, pause for tasks or unsaved changes, and use native DSH recovery without forced restarts.
+- Require the public DSH 0.2.1-rc.3 update APIs; Suite components remain managed through Suite.
+
 ## 0.5.1（2026-10-26）
 
 - 抽帧默认使用每次独立的 run 目录；显式帧序列检查实际文件冲突。输出保护覆盖所有拼接输入、字幕源、符号链接及硬链接别名。

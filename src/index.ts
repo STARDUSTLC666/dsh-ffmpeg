@@ -1,3 +1,4 @@
+import { registerUpdates } from '@stardustlc/dsh-updates'
 /**
  * dsh-ffmpeg —— 视频处理工具插件（node 半身，配置走 cordis.patch.yml）。
  *
@@ -30,6 +31,8 @@ export interface FfmpegPluginContext {
  * @param config - 插件配置（可缺省）。
  */
 export function apply(ctx: FfmpegPluginContext, config?: FfmpegConfig | null): void {
+  registerUpdates(ctx, { name: "dsh-ffmpeg" })
+
   const cfg = resolveConfig(config)
   const runner = createSubprocessRunner((spec) => ctx.subprocess.spawn(spec), cfg.graceMs, cfg.timeoutMs)
 
