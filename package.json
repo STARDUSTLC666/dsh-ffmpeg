@@ -1,6 +1,6 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "用自然语言调用 FFmpeg，处理已有音视频文件。",
   "type": "module",
   "main": "lib/index.js",
@@ -70,6 +70,6 @@
   "author": "stardustlc",
   "packageManager": "pnpm@11.7.0",
   "dependencies": {
-    "@stardustlc/dsh-updates": "0.1.2"
+    "@stardustlc/dsh-updates": "0.1.3"
   }
 }
