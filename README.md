@@ -4,7 +4,7 @@
 
 ![dsh-ffmpeg 鲸鱼娘插件封面](https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/assets/cover-whale-girl.png)
 
-用自然语言调用 FFmpeg，处理已有音视频文件。
+通过 DSH 调用本机 FFmpeg，处理已有音视频文件：裁切、拼接、转码、字幕、音轨、GIF 与帧提取。适合媒体后期处理；创作新的视频工程可选 HyperFrames 或 Remotion 插件。
 
 [![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
 

@@ -4,7 +4,7 @@
 
 ![dsh-ffmpeg whale girl plugin cover](https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/assets/cover-whale-girl.png)
 
-Use FFmpeg to process existing audio and video files through natural-language requests.
+Use local FFmpeg from DSH to trim, join, encode and process existing media, including subtitles, audio, GIFs and frame extraction. For authoring new video projects, use the HyperFrames or Remotion plugin.
 
 [![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
