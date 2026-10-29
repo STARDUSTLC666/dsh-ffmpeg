@@ -1,7 +1,7 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.6.3",
-  "description": "用自然语言调用 FFmpeg，处理已有音视频文件。",
+  "version": "0.6.4",
+  "description": "DSH 音视频处理：本机 FFmpeg 裁切、拼接、转码、字幕、音轨、GIF 与帧提取。欢迎提交 issues 和 PR。",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
