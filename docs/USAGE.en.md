@@ -75,9 +75,13 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # build + 115 tests
+pnpm test       # build + 120 tests
 ```
 
 ## License
 
 MIT
+
+## Video contact sheet
+
+Use `ffmpeg_storyboard({input:"movie.mp4",count:12,columns:4,width:320})` to create one PNG. Optional `start` and `end` accept seconds or HH:MM:SS.mmm. Count is 2–36, columns 1–6 and cell width 160–640. Cells use a 16:9 letterbox and preserve source aspect ratio. The tool result maps each cell to a requested seek time, not an exact decoded frame timecode. Uniform sampling does not detect scenes or guarantee coverage of short shots. Requires a seekable local video with a known duration. Sources and existing outputs are preserved by default; cancellation/failure cleans scratch and publishes no partial sheet.

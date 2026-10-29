@@ -19,6 +19,7 @@ import { type ProcessRunner, type RunResult } from './exec.js'
 import { parseProbeJson, type MediaInfo } from './ffprobe.js'
 import { assertInputFile, resolveOutputPath, resolveFramePattern, sanitizeName } from './paths.js'
 import { parseTimeArg } from './config.js'
+import { createStoryboardTool } from './storyboard.js'
 
 /** 模型可见的内容块。 */
 export interface ContentBlock {
@@ -37,7 +38,7 @@ function executionCwd(exec?: FfmpegToolRunContext): string { return exec?.agent?
 export interface FfmpegToolDefinition {
   name: string
   description: string
-  parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] }
+  parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[]; additionalProperties?: boolean }
   output: {
     schema: Record<string, unknown>
     render(args: unknown, value: unknown): ContentBlock[]
@@ -682,5 +683,5 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
     timeoutMs: 30000,
   }
 
-  return [probe, cut, concat, encode, subtitle, extract, gif, frames, adjust, health]
+  return [probe, cut, concat, encode, subtitle, extract, gif, frames, createStoryboardTool(cfg, runner), adjust, health]
 }

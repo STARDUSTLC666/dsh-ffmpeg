@@ -79,9 +79,13 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 115 个测试
+pnpm test       # 构建 + 120 个测试
 ```
 
 ## License
 
 MIT
+
+## 视频总览图
+
+调用 `ffmpeg_storyboard({input:"movie.mp4",count:12,columns:4,width:320})` 生成单张 PNG。可用 start/end 指定片段，接受秒数或 HH:MM:SS.mmm；count 为 2–36，columns 为 1–6，每格 width 为 160–640。画面按 16:9 留黑边，不拉伸原比例。工具结果附每格的采样目标时间，不是实际解码帧的精确时间码；均匀采样不等于镜头检测，也不保证覆盖所有短镜头。需要可定位、时长已知的本地视频。默认保留源文件与重名成品；取消或失败会清理临时采样，不发布半成品。

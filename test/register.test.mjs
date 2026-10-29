@@ -39,10 +39,10 @@ test('inject 声明 subprocess 与 tools', () => {
   assert.deepEqual(inject, ['subprocess', 'tools'])
 })
 
-test('apply 注册 10 个工具', () => {
+test('apply 注册 11 个工具', () => {
   const { ctx, registered } = makeFakeCtx()
   apply(ctx, {})
-  assert.equal(registered.length, 10)
+  assert.equal(registered.length, 11)
 })
 
 test('apply 接受空配置，无效配置直接报错且不注册工具', () => {
@@ -56,7 +56,7 @@ test('apply 接受空配置，无效配置直接报错且不注册工具', () =>
 test('dispose 触发时卸载全部工具', () => {
   const { ctx, registered, listeners } = makeFakeCtx()
   apply(ctx, {})
-  assert.equal(registered.length, 10)
+  assert.equal(registered.length, 11)
   for (const listener of listeners.dispose ?? []) listener()
   assert.equal(registered.length, 0)
 })

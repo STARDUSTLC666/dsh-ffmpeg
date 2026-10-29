@@ -4,6 +4,11 @@
 
 [历史英文记录](docs/CHANGELOG.en.md)
 
+## 0.7.0 (2026-10-29)
+
+- 新增 ffmpeg_storyboard：均匀采样并拼成单张 PNG 总览图，附每格采样目标时间；可指定片段范围，保留原视频与已有成品。失败或取消会清理临时采样，不发布半成品。
+- Add ffmpeg_storyboard for bounded, uniform video contact sheets with per-cell target times and optional time ranges. Preserve source files and existing output; clean scratch and publish only a completed PNG.
+
 ## 0.6.4 (2026-10-29)
 
 - 同步仓库与 npm 的简明介绍、中英文 README 和反馈入口；本次为文档与包元数据更新。
