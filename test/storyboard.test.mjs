@@ -64,3 +64,11 @@ test('storyboard refuses invalid sizes, audio-only media, unknown duration and i
   [undefined,{start:11.9},/太靠近结尾/],
  ]){const sample=fixture(t,{probe});await assert.rejects(sample.tool.execute({input:sample.input,...args},sample.exec),pattern)}
 })
+
+test('fractional-frame-rate short clips never round a seek past their last frame',async t=>{
+ const f=fixture(t,{probe:{format:{duration:'0.1001'},streams:[{codec_type:'video',width:160,height:90,avg_frame_rate:'30000/1001',duration:'0.1001'}]}})
+ const value=await f.tool.execute({input:f.input,count:12},f.exec),last=2*1001/30000
+ assert.ok(value.frames.every(frame=>frame.seconds<=last))
+ const seeks=f.calls.filter(call=>call.argv.includes('-ss')).map(call=>Number(call.argv[call.argv.indexOf('-ss')+1]))
+ assert.equal(seeks.length,12);assert.ok(seeks.every(time=>time<=last));assert.equal(seeks.at(-1),0.066733)
+})

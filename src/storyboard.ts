@@ -1,7 +1,7 @@
 import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, extname, join } from 'node:path'
-import { fmtSeconds, probeArgs } from './args.js'
+import { probeArgs } from './args.js'
 import { parseTimeArg, type ResolvedFfmpegConfig } from './config.js'
 import type { ProcessRunner } from './exec.js'
 import { parseProbeJson } from './ffprobe.js'
@@ -69,13 +69,15 @@ export function createStoryboardTool(config: ResolvedFfmpegConfig, runner: Proce
       if (start >= end || end > duration) throw new Error('采样范围必须满足 0 ≤ start < end ≤ 视频时长（' + duration + ' 秒）。')
       const lastFrame = info.video.fps && info.video.fps > 0 ? Math.max(0, duration - 1 / info.video.fps) : duration
       if (start > lastFrame) throw new Error('所选范围太靠近结尾，无法取得视频帧；请提前 start。')
-      const frames = Array.from({ length: count }, (_, i) => ({ index: i + 1, row: Math.floor(i / columns) + 1, column: i % columns + 1, seconds: Number(fmtSeconds(Math.min(lastFrame, start + (end - start) * i / count))) }))
+      // Round down to FFmpeg's microsecond clock. Millisecond rounding can seek
+      // beyond the final frame of a short fractional-frame-rate video.
+      const frames = Array.from({ length: count }, (_, i) => ({ index: i + 1, row: Math.floor(i / columns) + 1, column: i % columns + 1, seconds: Math.floor(Math.min(lastFrame, start + (end - start) * i / count) * 1e6) / 1e6 }))
       const scratch = mkdtempSync(join(tmpdir(), 'dsh-ffmpeg-storyboard-'))
       try {
         for (const frame of frames) {
           const image = join(scratch, 'frame-' + String(frame.index).padStart(3, '0') + '.png')
           const filter = 'scale=' + cellWidth + ':' + cellHeight + ':force_original_aspect_ratio=decrease,pad=' + cellWidth + ':' + cellHeight + ':(ow-iw)/2:(oh-ih)/2:color=black,setsar=1'
-          await invoke([config.ffmpegPath, '-nostdin', '-v', 'error', '-n', '-ss', fmtSeconds(frame.seconds), '-i', input, '-map', '0:v:0', '-frames:v', '1', '-an', '-vf', filter, '-update', '1', image], '采样 #' + frame.index)
+          await invoke([config.ffmpegPath, '-nostdin', '-v', 'error', '-n', '-ss', frame.seconds.toFixed(6), '-i', input, '-map', '0:v:0', '-frames:v', '1', '-an', '-vf', filter, '-update', '1', image], '采样 #' + frame.index)
           if (!existsSync(image) || !lstatSync(image).isFile() || lstatSync(image).size === 0) throw new Error('无法取得第 ' + frame.index + ' 格（' + frame.seconds + ' 秒）的画面，请缩短采样范围后重试。')
         }
         const assembled = join(scratch, 'storyboard.png')

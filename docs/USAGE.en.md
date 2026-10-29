@@ -75,7 +75,7 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # build + 120 tests
+pnpm test       # build + 121 tests
 ```
 
 ## License

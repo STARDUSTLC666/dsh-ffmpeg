@@ -79,7 +79,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 120 个测试
+pnpm test       # 构建 + 121 个测试
 ```
 
 ## License

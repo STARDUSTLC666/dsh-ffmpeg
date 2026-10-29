@@ -4,6 +4,11 @@
 
 [历史英文记录](docs/CHANGELOG.en.md)
 
+## 0.7.1 (2026-10-29)
+
+- 修复极短、分数帧率视频的采样时间取整越过最后一帧：向下取微秒精度，源文件保持不变。
+- Avoid rounding past the final frame when sampling short fractional-frame-rate clips.
+
 ## 0.7.0 (2026-10-29)
 
 - 新增 ffmpeg_storyboard：均匀采样并拼成单张 PNG 总览图，附每格采样目标时间；可指定片段范围，保留原视频与已有成品。失败或取消会清理临时采样，不发布半成品。
