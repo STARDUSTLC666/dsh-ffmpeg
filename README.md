@@ -6,7 +6,9 @@
 
 通过 DSH 调用本机 FFmpeg，处理已有音视频文件：裁切、拼接、转码、字幕、音轨、GIF 与帧提取。适合媒体后期处理；创作新的视频工程可选 HyperFrames 或 Remotion 插件。
 
-[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
+[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg) [![total downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-total-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
+
+[下载统计说明](https://github.com/STARDUSTLC666/dsh-suite/blob/npm-downloads/README.md)
 
 欢迎使用，遇到问题或有改进建议，请提交 [issues](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues) 和 [PR](https://github.com/STARDUSTLC666/dsh-ffmpeg/pulls)。
 
@@ -30,7 +32,11 @@ dsh plugin --profile desktop add dsh-ffmpeg
 
 ## 开始使用
 
-准备输入文件后可说：“把这段视频裁成 30 秒，并导出适合分享的 MP4。”
+1. 安装 FFmpeg/ffprobe，并在 DSH 中运行 ffmpeg_health 检查可执行文件。
+2. 把输入文件放在当前工作区或提供准确的本地路径，说明想要的片段和输出规格。
+3. 想先看内容时，让助手用 ffmpeg_storyboard 生成总览图，按每格采样时间定位片段。
+4. 选择裁切、拼接、转码或抽帧等操作；默认保留源文件，重名成品另取文件名。
+5. 按返回路径打开成品，用 ffmpeg_probe 检查参数，并实际播放核对画面和声音。
 
 ## 依赖与配置
 

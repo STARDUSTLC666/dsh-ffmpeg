@@ -6,7 +6,9 @@
 
 Use local FFmpeg from DSH to trim, join, encode and process existing media, including subtitles, audio, GIFs and frame extraction. For authoring new video projects, use the HyperFrames or Remotion plugin.
 
-[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
+[![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg) [![total downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-total-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
+
+[Download statistics](https://github.com/STARDUSTLC666/dsh-suite/blob/npm-downloads/README.md)
 
 Feedback and contributions are welcome: report [issues](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues) or submit [pull requests](https://github.com/STARDUSTLC666/dsh-ffmpeg/pulls).
 
@@ -30,7 +32,11 @@ For the web version, replace `desktop` with `web`. Restart DSH after installatio
 
 ## Start using it
 
-Provide an input file and ask: “Trim this video to 30 seconds and export a shareable MP4.”
+1. Install FFmpeg/ffprobe and run ffmpeg_health in DSH to check the executables.
+2. Place the input in your workspace or provide its exact local path, and describe the clip and output requirements.
+3. Use ffmpeg_storyboard to inspect a contact sheet first; locate segments using the returned cell sample times.
+4. Choose trimming, joining, encoding or extraction. Source files are protected and existing output gets a new name by default.
+5. Open the returned output, inspect it with ffmpeg_probe, and play it to check both picture and sound.
 
 ## Requirements and configuration
 
