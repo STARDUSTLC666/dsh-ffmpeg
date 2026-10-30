@@ -1,6 +1,6 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "DSH 音视频处理：本机 FFmpeg 裁切、转码、字幕、音轨、GIF、抽帧与视频总览图。欢迎提交 issues 和 PR。",
   "type": "module",
   "main": "lib/index.js",
@@ -20,7 +20,8 @@
     "README.md",
     "README.en.md",
     "docs",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "assets/plugin-icon.webp"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/build-updates.mjs",
@@ -71,5 +72,6 @@
   "packageManager": "pnpm@11.7.0",
   "dependencies": {
     "@stardustlc/dsh-updates": "0.1.3"
-  }
+  },
+  "icon": "./assets/plugin-icon.webp"
 }
