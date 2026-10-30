@@ -1,34 +1,35 @@
-# dsh-ffmpeg
+**简体中文** · [English](README.en.md)
 
-[English](README.en.md)
+# FFmpeg
 
-![dsh-ffmpeg 鲸鱼娘插件封面](https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/assets/cover-whale-girl.png)
-
-通过 DSH 调用本机 FFmpeg，处理已有音视频文件：裁切、拼接、转码、字幕、音轨、GIF 与帧提取。适合媒体后期处理；创作新的视频工程可选 HyperFrames 或 Remotion 插件。
+**把已有音视频处理成需要的成品。**
 
 [![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg) [![total downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-total-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
-[下载统计说明](https://github.com/STARDUSTLC666/dsh-suite/blob/npm-downloads/README.md)
+**[安装使用](#安装) · [使用流程](#开始使用) · [完整说明](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/REFERENCE.zh.md)**
 
-欢迎使用，遇到问题或有改进建议，请提交 [issues](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues) 和 [PR](https://github.com/STARDUSTLC666/dsh-ffmpeg/pulls)。
+<picture>
+  <source media="(prefers-color-scheme: dark) and (max-width: 640px)" srcset="https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/docs/assets/intro/workflow-zh-mobile-dark.svg">
+  <source media="(max-width: 640px)" srcset="https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/docs/assets/intro/workflow-zh-mobile-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/docs/assets/intro/workflow-zh-dark.svg">
+  <img src="https://raw.githubusercontent.com/STARDUSTLC666/dsh-ffmpeg/master/docs/assets/intro/workflow-zh-light.svg" alt="把已有音视频处理成需要的成品。 · 流程示意" width="100%">
+</picture>
 
 ## 功能
 
-- 视频总览图：均匀采样为单张 PNG，附每格采样时间；支持片段范围、文件保护与取消。
-- 探测媒体信息，裁剪、拼接和压制视频。
-- 拼接不同尺寸和帧率的素材时可统一画布并等比补边；无声片段补静音，保留其余原声。
-- 添加字幕、生成 GIF、抽取画面。
-- 通过宿主 subprocess 执行命令。
+- 查看媒体参数，按采样时间浏览视频总览图。
+- 裁切、拼接、转码、加字幕或提取画面。
+- 保留源文件，实际播放输出后再交付。
 
 ## 安装
 
-桌面版可在「插件」面板按包名 `dsh-ffmpeg` 安装。已配置 dsh 命令时也可使用：
+在 DSH 桌面版「插件」面板安装 `dsh-ffmpeg`。已配置命令行时也可使用：
 
 ```bash
 dsh plugin --profile desktop add dsh-ffmpeg
 ```
 
-网页版把命令中的 `desktop` 改为 `web`。安装后重启 DSH。
+网页版把 `desktop` 改为 `web`；安装后重启对应的 DSH。宿主要求以包声明 `>=0.2.1-rc.3` 为准。
 
 ## 开始使用
 
@@ -38,25 +39,32 @@ dsh plugin --profile desktop add dsh-ffmpeg
 4. 选择裁切、拼接、转码或抽帧等操作；默认保留源文件，重名成品另取文件名。
 5. 按返回路径打开成品，用 ffmpeg_probe 检查参数，并实际播放核对画面和声音。
 
-## 依赖与配置
+可以这样说：
 
-需要 FFmpeg / ffprobe；可在配置中指定可执行文件路径。
+> 先为这个视频生成带采样时间的总览图，保留原文件，再让我选择要剪的片段。
 
-详细配置、工具参数与排错见[使用说明](docs/USAGE.md)。从源码独立开发时，Node 要求以 [package.json](package.json) 为准。
+## 开始前要知道
 
-## 文档
+需要本机 FFmpeg / ffprobe；输入与输出应位于允许访问的位置。
 
-- [使用与排错](docs/USAGE.md)
-- [更新记录](CHANGELOG.md)
-- [验证范围与历史记录](docs/VALIDATION.md)
-- [问题反馈与功能建议](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues)
+配置、完整工具与排错见[详细使用说明](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/REFERENCE.zh.md)。
 
 ## 插件更新
 
-需要 DSH 0.2.1-rc.3 或更新版本。更新控件直接位于原有工作台内容末尾；没有工作台的插件，位于原生插件详情页底部。检查、更新记录和偏好在原地展开，不增加独立更新页面或设置菜单。自动检查默认开启；**自动安装默认关闭**，明确授权后才会在空闲且没有未保存修改时安装兼容的稳定补丁。开关按插件独立保存，可关闭、推迟或忽略提醒；不会强制重启 DSH、升级 DSH 本体或替换本地源码安装。Suite 组件在当前页面底部明确说明并操作 Suite 整包更新。
+在工作台或原生插件详情页底部检查更新。默认自动检查，**默认不自动安装**；是否安装、何时重启由你决定。Suite 管理的组件随整包更新。[查看更新规则](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/REFERENCE.zh.md)。
 
-旧版用户先在官方插件管理中手动更新一次，之后才会获得此入口。发布到 npm 不会直接替换用户已经安装的版本。
+## 文档
+
+- [详细使用、配置与边界](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/REFERENCE.zh.md)
+- [更新记录](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/CHANGELOG.md)
+- [验证范围与历史](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/VALIDATION.md)
+
+## 反馈与贡献
+
+如果插件帮到了你，欢迎 Star，让更多人发现它。问题和建议请提交 [Issues](https://github.com/STARDUSTLC666/dsh-ffmpeg/issues)，也欢迎代码与文档 [PR](https://github.com/STARDUSTLC666/dsh-ffmpeg/pulls)。反馈时附上版本与复现步骤，并移除凭据。
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/LICENSE)
+
+<a id="依赖与配置"></a>

@@ -1,7 +1,7 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.7.3",
-  "description": "DSH 音视频处理：本机 FFmpeg 裁切、转码、字幕、音轨、GIF、抽帧与视频总览图。欢迎提交 issues 和 PR。",
+  "version": "0.7.4",
+  "description": "把已有音视频处理成需要的成品。 需要本机 FFmpeg / ffprobe 欢迎提交 issues 和 PR。",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
