@@ -63,6 +63,20 @@ ffmpeg_extract { input: E:\videos\raw.webm, what: audio }
 ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 ```
 
+## Troubleshooting
+
+Run `ffmpeg_health` first: it probes ffmpeg and ffprobe separately, prints the executable actually used, and adds numbered next steps when a check fails.
+
+| Symptom | Cause and fix |
+| :-- | :-- |
+| `spawn ffmpeg ENOENT` / "could not start: executable not found" | FFmpeg is missing or not on PATH. Install FFmpeg (with ffprobe), or set `ffmpegPath` / `ffprobePath` in `cordis.patch.yml`, or `DSH_FFMPEG_PATH` / `DSH_FFPROBE_PATH` (absolute paths), then restart DSH and run `ffmpeg_health` again |
+| `failed (exit code N): …` | The tail of ffmpeg's own stderr. Read the last line first; unsupported codecs, subtitle paths and filter arguments are the usual causes |
+| The operation timed out | The default per-operation limit is 5 minutes. Raise `timeoutMs` (up to 2 hours) for large files or multi-input concat, or process in `start`/`end` slices |
+| "output over 4MB was truncated" | The probe output was truncated by the host and cannot be parsed. Narrow the probe (cut a slice first) or use a smaller input |
+| "frame output already exists … refusing to overwrite" | Frame sequences default to a fresh `<name>-frames/run-*` directory; with an explicit output, change the prefix or set `overwrite: true` |
+| "output path equals the input file" | Overwrite protection. Choose another output path; same-name outputs are auto-suffixed with `_1`/`_2` |
+| Reported times do not match exact frames | `ffmpeg_storyboard` reports sampling targets, and uniform sampling is not shot detection. For exact timecodes use `ffmpeg_probe` plus `ffmpeg_extract` |
+
 ## Safety
 
 - **No shell**: every argument is passed as its own argv element — user input cannot inject commands
@@ -75,7 +89,7 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 
 ```bash
 pnpm install
-pnpm test       # build + 121 tests
+pnpm test       # build + 123 tests
 ```
 
 ## License

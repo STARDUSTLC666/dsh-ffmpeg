@@ -67,6 +67,20 @@ ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
 ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 ```
 
+## 故障排查
+
+遇到问题先运行 `ffmpeg_health`：它会分别探测 ffmpeg 与 ffprobe，输出实际使用的可执行文件路径；失败时附「下一步」修复步骤。
+
+| 现象 | 原因与处理 |
+| :-- | :-- |
+| `spawn ffmpeg ENOENT` / 提示「找不到可执行文件」 | ffmpeg 未安装或不在 PATH。安装 FFmpeg（含 ffprobe），或在 `cordis.patch.yml` 配置 `ffmpegPath` / `ffprobePath`，也可设置 `DSH_FFMPEG_PATH` / `DSH_FFPROBE_PATH`（绝对路径），重启 DSH 后重跑 `ffmpeg_health` |
+| `失败（退出码 N）：…` | 直接来自 ffmpeg 的 stderr 尾部。先看最后一行，常见原因是输入编码、字幕文件路径或滤镜参数不支持 |
+| 操作超时 | 单次操作默认 5 分钟。大文件或多路拼接可调大 `timeoutMs`（上限 2 小时），或用 `start`/`end` 分段处理 |
+| 「输出超过 4MB 已截断」 | 探测输出被宿主截断无法解析。缩小探测范围（先 `ffmpeg_cut` 截出片段再 probe），或改用更小的输入 |
+| 「抽帧输出已存在…已拒绝覆盖」 | 帧序列默认写入新的 `<名称>-frames/run-*` 目录；显式指定 output 时请更换文件名前缀或使用 `overwrite: true` |
+| 「输出路径与输入文件相同」 | 防覆写保护：换输出路径或文件名。同名成品默认自动加 `_1`/`_2` 序号 |
+| 结果里的时间不是精确帧 | `ffmpeg_storyboard` 报告的是采样目标时间，均匀采样不等于镜头检测；需要精确时间码时用 `ffmpeg_probe` + `ffmpeg_extract` |
+
 ## 安全设计
 
 - **无 shell**：所有参数以独立 argv 数组传递，用户输入不可能注入命令
@@ -79,7 +93,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 121 个测试
+pnpm test       # 构建 + 123 个测试
 ```
 
 ## License
