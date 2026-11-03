@@ -1,11 +1,19 @@
 # 更新记录
 
-## 0.7.4 (2026-10-30)
+## 0.7.5 (2026-10-30)
 
 - `ffmpeg_health` 现在输出实际探测的可执行文件路径，失败时附 1-3 步修复指引（安装 FFmpeg / 加入 PATH / 配置 ffmpegPath 或 DSH_FFMPEG_PATH / 重启 DSH）并在结构化结果里给出 `hint`；工具结果文本同步显示。
 - 可执行文件缺失（ENOENT）时，各工具直接给出可行动的修复文案并点名 `ffmpeg_health`，其他错误（如 EACCES）保持原样不被改写；取消语义不变。
 - 使用说明新增「故障排查」表：ENOENT、退出码失败、超时、4MB 输出截断、覆盖拒绝、源文件保护与总览图时间含义。
 - Health now prints the probed executable paths, adds numbered next steps and a structured hint on failure; missing binaries produce actionable tool errors that point at ffmpeg_health while other errors stay untouched; new troubleshooting docs.
+
+## 0.7.4 (2026-10-30)
+
+- 重整中英文首页：用途、三步流程图、安装入口与操作示例；详细配置与边界集中到完整说明。
+- 保留下载统计、独立更新选择、问题反馈和贡献入口；原封面与运行功能保留。
+- Refresh bilingual landing pages, workflow artwork, quick starts and reference navigation.
+
+
 ## 0.7.3 (2026-10-30)
 
 - 原生插件列表与详情新增专门生成的鲸鱼娘图标：大头像、独立功能符号、透明留白，适合 30 / 36 px 显示；原封面保留。
