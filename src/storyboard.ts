@@ -29,9 +29,9 @@ export function createStoryboardTool(config: ResolvedFfmpegConfig, runner: Proce
       type: 'object', additionalProperties: false, required: ['input'], properties: {
         input: { type: 'string', description: '本地视频路径，相对当前会话工作区。' },
         output: { type: 'string', description: 'PNG 输出路径，默认源文件旁的 <文件名>-storyboard.png。' },
-        count: { type: 'integer', minimum: 2, maximum: 36, description: '采样格数，2–36，默认 12。' },
-        columns: { type: 'integer', minimum: 1, maximum: 6, description: '列数，1–6，默认 4；不超过采样格数。' },
-        width: { type: 'integer', minimum: 160, maximum: 640, description: '每格宽度，160–640 像素，默认 320；保持比例并留黑边。' },
+        count: { type: 'integer', description: '采样格数，2–36，默认 12。' },
+        columns: { type: 'integer', description: '列数，1–6，默认 4；不超过采样格数。' },
+        width: { type: 'integer', description: '每格宽度，160–640 像素，默认 320；保持比例并留黑边。' },
         start: { oneOf: [{ type: 'number' }, { type: 'string' }], description: '开始位置，秒数或 HH:MM:SS.mmm，默认 0。' },
         end: { oneOf: [{ type: 'number' }, { type: 'string' }], description: '结束位置，秒数或 HH:MM:SS.mmm，默认视频结尾。' },
       },

@@ -1,5 +1,13 @@
 # 更新记录
 
+## 0.7.6 (2026-11-04)
+
+- 同步共享界面：嵌入设置时继承宿主底色，输入框跟随主题，空状态保持可读宽度；新版 DSH 可显示插件设置图标。
+- Align embedded surfaces, themed inputs, readable empty states and optional native settings icons.
+- 分镜参数对齐官方 SDK 支持的 schema 子集，范围仍由执行层严格校验。
+- Align storyboard schemas with the native SDK subset while keeping runtime bounds.
+
+
 ## 0.7.5 (2026-10-30)
 
 - `ffmpeg_health` 现在输出实际探测的可执行文件路径，失败时附 1-3 步修复指引（安装 FFmpeg / 加入 PATH / 配置 ffmpegPath 或 DSH_FFMPEG_PATH / 重启 DSH）并在结构化结果里给出 `hint`；工具结果文本同步显示。
