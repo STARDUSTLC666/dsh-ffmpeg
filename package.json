@@ -1,6 +1,6 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "description": "DSH 音视频处理：本机 FFmpeg 裁切、转码、字幕、音轨、GIF、抽帧与视频总览图。欢迎提交 issues 和 PR。",
   "type": "module",
   "main": "lib/index.js",
@@ -54,7 +54,7 @@
   "license": "MIT",
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
-    "dsh": ">=0.2.1-rc.3"
+    "dsh": ">=0.2.1-rc.2"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

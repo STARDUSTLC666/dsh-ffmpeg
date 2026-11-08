@@ -1,5 +1,10 @@
 # 更新记录
 
+## 0.7.7 (2026-11-08)
+
+- 将最低 DSH 版本对齐到已验收的 0.2.1-rc.2，修复插件市场在该版本安装前直接拒绝的问题；保留宿主权限、进程执行及用户选择更新的机制，不要求版本豁免（#7）。
+- Support verified DSH 0.2.1-rc.2 installations without an allow-version exemption; retain native permissions, subprocess execution and optional updates.
+
 ## 0.7.6 (2026-11-04)
 
 - 同步共享界面：嵌入设置时继承宿主底色，输入框跟随主题，空状态保持可读宽度；新版 DSH 可显示插件设置图标。
