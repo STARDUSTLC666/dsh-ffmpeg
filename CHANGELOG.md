@@ -1,5 +1,10 @@
 # 更新记录
 
+## 0.7.8 (2026-11-14)
+
+- 适配 DSH 0.2.2-rc.3：最低 Harness 版本声明提升至 0.2.2-rc.3，运行时代码未变。
+- Support DSH 0.2.2-rc.3: raise the minimum Harness declaration to 0.2.2-rc.3; runtime code is unchanged.
+
 ## 0.7.7 (2026-11-08)
 
 - 将最低 DSH 版本对齐到已验收的 0.2.1-rc.2，修复插件市场在该版本安装前直接拒绝的问题；保留宿主权限、进程执行及用户选择更新的机制，不要求版本豁免（#7）。
