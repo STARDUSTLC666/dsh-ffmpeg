@@ -95,6 +95,7 @@ test('gif 两遍：palettegen 强制 -y，paletteuse 遵覆写策略', () => {
 test('fmtSeconds 与 escapeFilterPath', () => {
   assert.equal(fmtSeconds(1.234567), '1.235')
   assert.equal(escapeFilterPath('C:\\a\\b.srt'), 'C\\:/a/b.srt')
+  assert.equal(escapeFilterPath('E:\\clips\\sub [zh,en];1.srt'), 'E\\:/clips/sub \\[zh\\,en\\]\\;1.srt')
 })
 
 test('extractArgs audio 回退重编码：transcodeAudio=true 用 -c:a aac', () => {

@@ -22,6 +22,7 @@ export interface FfmpegPluginContext {
     tools: {
         register(definition: FfmpegToolDefinition): () => void;
     };
+    effect?(effect: () => () => void, label?: string): unknown;
     on?(event: string, listener: () => void): () => void;
 }
 /**

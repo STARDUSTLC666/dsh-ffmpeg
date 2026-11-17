@@ -15,9 +15,9 @@ function overwriteFlag(overwrite: boolean): string {
   return overwrite ? '-y' : '-n'
 }
 
-/** 转义 filter 路径（Windows 冒号与反斜杠、单引号）。 */
+/** 转义 filter 路径（Windows 冒号与反斜杠、单引号及方括号/分号/逗号）。 */
 export function escapeFilterPath(path: string): string {
-  return path.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'")
+  return path.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'").replace(/([[\],;])/g, '\\$1')
 }
 
 /** ffprobe 探测命令。 */

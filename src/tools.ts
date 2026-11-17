@@ -43,6 +43,7 @@ export interface FfmpegToolDefinition {
     schema: Record<string, unknown>
     render(args: unknown, value: unknown): ContentBlock[]
   }
+  isConcurrencySafe?(args?: unknown): boolean
   execute(args: unknown, exec: FfmpegToolRunContext): Promise<unknown>
   timeoutMs?: number
 }
@@ -234,6 +235,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
 
   const probe: FfmpegToolDefinition = {
     name: 'ffmpeg_probe',
+    isConcurrencySafe: () => true,
     description: '探测媒体文件信息：容器格式、时长、体积、码率，以及视频流（分辨率/帧率/编码）、音频流、字幕流。所有后续处理前建议先 probe。',
     parameters: compileParameters({
       input: { type: 'string', required: true, description: '媒体文件路径（必填）。' },
@@ -662,6 +664,7 @@ export function buildFfmpegTools(config: ResolvedFfmpegConfig, runner: ProcessRu
 
   const health: FfmpegToolDefinition = {
     name: 'ffmpeg_health',
+    isConcurrencySafe: () => true,
     description: 'dsh-ffmpeg 自检：验证 ffmpeg / ffprobe 可执行文件是否可用（执行 -version）。遇到问题时先运行本工具定位。',
     parameters: compileParameters({}),
     output: {

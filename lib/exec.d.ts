@@ -16,6 +16,7 @@ export interface ProcessRunner {
     run(argv: readonly string[], options?: {
         timeoutMs?: number;
         signal?: AbortSignal;
+        cwd?: string;
     }): Promise<RunResult>;
 }
 /** 工具所需的 ctx.subprocess 最小面。 */

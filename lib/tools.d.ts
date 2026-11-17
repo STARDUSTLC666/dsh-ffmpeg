@@ -37,6 +37,7 @@ export interface FfmpegToolDefinition {
         schema: Record<string, unknown>;
         render(args: unknown, value: unknown): ContentBlock[];
     };
+    isConcurrencySafe?(args?: unknown): boolean;
     execute(args: unknown, exec: FfmpegToolRunContext): Promise<unknown>;
     timeoutMs?: number;
 }

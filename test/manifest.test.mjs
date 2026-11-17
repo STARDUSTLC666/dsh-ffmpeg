@@ -41,4 +41,27 @@ test('名称与版本正确', () => {
   const pkg = require('../package.json')
   assert.equal(pkg.name, 'dsh-ffmpeg')
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/)
+  assert.equal(pkg.dsh.manifestVersion, 1)
+  assert.equal(pkg.exports['./locale/*.json'], './locale/*.json')
+  assert.ok(existsSync(new URL('../locale/zh.json', import.meta.url)))
+  assert.ok(existsSync(new URL('../locale/en.json', import.meta.url)))
+})
+
+test('Cordis 4 ctx.effect 卸载时正确清理全部工具', async () => {
+  const { apply } = await import('../lib/index.js')
+  const active = new Set()
+  const effects = []
+  apply({
+    subprocess: { spawn() { throw new Error('unused') } },
+    tools: {
+      register(def) {
+        active.add(def.name)
+        return () => active.delete(def.name)
+      },
+    },
+    effect(fn) { effects.push(fn()) },
+  }, {})
+  assert.equal(active.size, 11)
+  for (const dispose of effects) dispose?.()
+  assert.equal(active.size, 0)
 })

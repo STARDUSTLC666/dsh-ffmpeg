@@ -6,7 +6,7 @@
  */
 /** 秒数格式化为 ffmpeg 友好的定点字符串。 */
 export declare function fmtSeconds(seconds: number): string;
-/** 转义 filter 路径（Windows 冒号与反斜杠、单引号）。 */
+/** 转义 filter 路径（Windows 冒号与反斜杠、单引号及方括号/分号/逗号）。 */
 export declare function escapeFilterPath(path: string): string;
 /** ffprobe 探测命令。 */
 export declare function probeArgs(ffprobe: string, input: string): string[];

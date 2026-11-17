@@ -17,7 +17,7 @@ export interface RunResult {
 
 /** 可注入的进程执行器（生产用 subprocess 服务，测试用假实现）。 */
 export interface ProcessRunner {
-  run(argv: readonly string[], options?: { timeoutMs?: number; signal?: AbortSignal }): Promise<RunResult>
+  run(argv: readonly string[], options?: { timeoutMs?: number; signal?: AbortSignal; cwd?: string }): Promise<RunResult>
 }
 
 /** 工具所需的 ctx.subprocess 最小面。 */
@@ -59,7 +59,7 @@ export function createSubprocessRunner(spawn: SubprocessSpawnLike, graceMs: numb
       try {
         handle = spawn({
           argv,
-          cwd: process.cwd(),
+          cwd: options?.cwd ?? process.cwd(),
           stdio: {
             stdin: 'ignore',
             stdout: { maxBytes: COLLECT_BYTES },

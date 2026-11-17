@@ -22,6 +22,7 @@ export const inject = ['subprocess', 'tools']
 export interface FfmpegPluginContext {
   subprocess: { spawn: SubprocessSpawnLike }
   tools: { register(definition: FfmpegToolDefinition): () => void }
+  effect?(effect: () => () => void, label?: string): unknown
   on?(event: string, listener: () => void): () => void
 }
 
@@ -40,10 +41,13 @@ export function apply(ctx: FfmpegPluginContext, config?: FfmpegConfig | null): v
   for (const definition of buildFfmpegTools(cfg, runner)) {
     disposers.push(ctx.tools.register(definition))
   }
-  if (typeof ctx.on === 'function') {
-    ctx.on('dispose', () => {
-      for (const dispose of disposers) dispose()
-    })
+  const teardown = () => {
+    for (const dispose of disposers) dispose()
+  }
+  if (typeof ctx.effect === 'function') {
+    ctx.effect(() => teardown, 'ffmpeg.tools()')
+  } else if (typeof ctx.on === 'function') {
+    ctx.on('dispose', teardown)
   }
 }
 
