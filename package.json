@@ -1,6 +1,6 @@
 {
   "name": "dsh-ffmpeg",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "description": "DSH 音视频处理：本机 FFmpeg 裁切、转码、字幕、音轨、GIF、抽帧与视频总览图。欢迎提交 issues 和 PR。",
   "type": "module",
   "main": "lib/index.js",
@@ -34,12 +34,7 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-sidebar"
-      ]
+      "platform": "web"
     }
   },
   "keywords": [
@@ -71,7 +66,7 @@
   "author": "stardustlc",
   "packageManager": "pnpm@11.7.0",
   "dependencies": {
-    "@stardustlc/dsh-updates": "0.1.4"
+    "@stardustlc/dsh-updates": "0.2.0"
   },
   "icon": "./assets/plugin-icon.webp"
 }
