@@ -4,6 +4,8 @@
 
 **Turn existing media into the output you need.**
 
+Local FFmpeg media plugin for DeepSeek Harness (`>=0.2.2-rc.3`): handles media probing, trimming, concatenation, preset transcoding, subtitle burn-in, storyboard extraction, and GIF export with Windows-safe filter path escaping.
+
 [![npm](https://img.shields.io/npm/v/dsh-ffmpeg)](https://www.npmjs.com/package/dsh-ffmpeg) [![downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg) [![total downloads](https://raw.githubusercontent.com/STARDUSTLC666/dsh-suite/npm-downloads/assets/dsh-ffmpeg-total-downloads.svg)](https://www.npmjs.com/package/dsh-ffmpeg)
 
 **[Install](#install) · [Workflow](#start-using-it) · [Full guide](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/REFERENCE.en.md)**

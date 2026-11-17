@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "FFmpeg",
-    "description": "Local media toolkit for probing, cutting, concatenating, preset encoding, subtitle burn-in, frame and storyboard extraction, GIFs, and speed/audio adjustments."
+    "description": "Local FFmpeg media toolkit for DeepSeek Harness: media probing, cutting, concatenation, preset encoding, subtitle burn-in, storyboards, and GIF export."
   }
 }
