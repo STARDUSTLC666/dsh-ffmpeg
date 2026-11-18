@@ -1,5 +1,10 @@
 # 更新记录
 
+## 0.7.13 (2026-11-18)
+
+- 重写中英文快速上手与日常剪辑流程：去除要求用户记忆底层函数名的步骤，改为「看时间戳总览图选点 → 自然语言剪辑/压制/烧字幕 → 播放核对」三步流与可直接复制的场景话术。
+- Rewrite bilingual quick-start workflows around human goals (visual timestamp sheet -> natural-language trim/compress/subtitles/GIF -> playback check) with copy-ready prompts.
+
 ## 0.7.12 (2026-11-18)
 
 - 更新区底部新增克制、无打扰的 GitHub 点赞与问题反馈快捷链接，并完善中英文检索关键词。

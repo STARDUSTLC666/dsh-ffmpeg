@@ -35,15 +35,17 @@ For the web profile, replace `desktop` with `web`. Restart that DSH profile afte
 
 ## Start using it
 
-1. Install FFmpeg/ffprobe and run ffmpeg_health in DSH to check the executables.
-2. Place the input in your workspace or provide its exact local path, and describe the clip and output requirements.
-3. Use ffmpeg_storyboard to inspect a contact sheet first; locate segments using the returned cell sample times.
-4. Choose trimming, joining, encoding or extraction. Source files are protected and existing output gets a new name by default.
-5. Open the returned output, inspect it with ffmpeg_probe, and play it to check both picture and sound.
+No need to memorize raw FFmpeg flags — follow three natural steps:
 
-Example request：
+1. **Check setup & drop media**: Ensure `ffmpeg` and `ffprobe` are installed locally (ask *"Check whether FFmpeg is ready"* if unsure) and place your video, audio, or `.srt` subtitle files in the workspace.
+2. **Preview timestamps visually (great for long recordings)**: When you don't know exact cut points, ask for a **timestamped contact sheet** first so you can pick start/end times visually.
+3. **Describe the outcome & play back**: Ask in plain language to trim, join, compress, burn in subtitles, extract frames, or export a GIF. Original source files are never overwritten; open and play the output path to confirm video and audio.
 
-> Create a timestamped contact sheet first, keeping the source intact, then let me choose a clip.
+Ready-to-copy prompts:
+
+- **Find cut points**: `Generate a timestamped contact sheet for demo.mp4 first so I can pick which segment to keep.`
+- **Trim & compress**: `Trim 01:15 to 03:40 from recording.mp4 and encode a compact 1080p MP4 for sharing, keeping the original file.`
+- **Burn subtitles & make a GIF**: `Burn subtitles.srt into talk.mp4, and export the first 6 seconds as a smooth preview GIF.`
 
 ## Before you start
 
