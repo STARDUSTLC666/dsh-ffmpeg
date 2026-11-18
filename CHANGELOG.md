@@ -1,5 +1,10 @@
 # 更新记录
 
+## 0.7.14 (2026-11-18)
+
+- 同步 `@stardustlc/dsh-updates` 0.2.3：侧边栏工作台平时默认隐藏底部更新栏（零高度占用），仅在检测到兼容新版本或执行更新时浮现单行精简提示条；完整更新设置与检查入口统一保留在 DSH「插件」详情页底部。
+- Sync `@stardustlc/dsh-updates` 0.2.3: keep the sidebar workbench update footer hidden by default when up-to-date, surfacing a single-line compact strip only for actionable updates or active jobs while retaining full controls in native Plugin Details.
+
 ## 0.7.13 (2026-11-18)
 
 - 重写中英文快速上手与日常剪辑流程：去除要求用户记忆底层函数名的步骤，改为「看时间戳总览图选点 → 自然语言剪辑/压制/烧字幕 → 播放核对」三步流与可直接复制的场景话术。
