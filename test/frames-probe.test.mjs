@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, existsSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { buildFfmpegTools, buildProbeSummary, resolveConfig, extractArgs, frameAtArgs } from '../lib/index.js'
@@ -126,6 +126,24 @@ test('ffmpeg_frames times 模式：逐时间点执行且校验非法时间', asy
   assert.ok(runner.calls[0].argv.includes('-ss'))
   await assert.rejects(() => frames.execute({ input, times: ['x'], outputDir: outDir }), /时间点非法/)
   await assert.rejects(() => frames.execute({ input, times: new Array(21).fill('1'), outputDir: outDir }), /最多 20 个/)
+})
+
+test('ffmpeg_frames 参数非法不建目录，执行失败清理空 run-* 子目录', async () => {
+  const invalidOutDir = join(dir, 'frames-invalid-never-created')
+  const runner = makeRunner()
+  const frames = buildFfmpegTools(cfg, runner).find((t) => t.name === 'ffmpeg_frames')
+  await assert.rejects(() => frames.execute({ input, times: new Array(21).fill('1'), outputDir: invalidOutDir }), /最多 20 个/)
+  await assert.rejects(() => frames.execute({ input, times: ['1', 'not-a-time'], outputDir: invalidOutDir }), /时间点非法/)
+  await assert.rejects(() => frames.execute({ input, every: 0, outputDir: invalidOutDir }), /every 必须大于 0/)
+  await assert.rejects(() => frames.execute({ input, every: -2, outputDir: invalidOutDir }), /every 必须大于 0/)
+  assert.equal(existsSync(invalidOutDir), false, '参数校验失败时不应创建输出目录或 run-* 子目录')
+  assert.equal(runner.calls.length, 0, '参数校验失败时不应调用 ffmpeg')
+
+  const failOutDir = join(dir, 'frames-exec-fail')
+  const failingRunner = makeRunner([{ exitCode: 1, stderr: 'boom' }])
+  const failingFrames = buildFfmpegTools(cfg, failingRunner).find((t) => t.name === 'ffmpeg_frames')
+  await assert.rejects(() => failingFrames.execute({ input, every: 1, outputDir: failOutDir }), /boom/)
+  assert.deepEqual(readdirSync(failOutDir), [], '执行失败时应清理新建的 run-* 子目录')
 })
 
 test('ffmpeg_frames 非法 format 抛错', async () => {

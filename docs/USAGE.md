@@ -37,6 +37,7 @@ dsh plugin --profile web remove dsh-ffmpeg
     # ffmpegPath: C:\tools\ffmpeg\bin\ffmpeg.exe   # 非 PATH 时显式指定（也可用 DSH_FFMPEG_PATH）
     # ffprobePath: C:\tools\ffmpeg\bin\ffprobe.exe # 也可用 DSH_FFPROBE_PATH
     timeoutMs: 300000                                # 单次操作超时（默认 5 分钟，10 秒 - 2 小时）
+    # graceMs: 15000                                 # 超时终止宽限期（默认 15 秒，1000–120000 毫秒）
     # overwrite: true                                 # 允许覆盖同名输出（默认自动加 _1/_2 序号）
 ```
 
@@ -52,6 +53,7 @@ dsh plugin --profile web remove dsh-ffmpeg
 | `ffmpeg_extract` | 提取音轨（m4a，非 AAC 自动转 AAC）/ 抽帧序列 / 单帧 / 字幕流 | `input`+`what` 必填 |
 | `ffmpeg_gif` | 视频转高质量 GIF（两遍调色板） | `input` 必填；`fps`/`width`/`duration` 可选 |
 | `ffmpeg_frames` | 批量抽帧给视觉模型读图（定间隔或指定时间点，PNG/JPG） | `input` 必填；`every`/`times` 二选一 |
+| `ffmpeg_storyboard` | 按时长均匀采样拼接单张 PNG 视频总览图，返回每格目标时间 | `input` 必填；`count`/`columns`/`width`/`start`/`end` 可选 |
 | `ffmpeg_adjust` | 变速（音视频同步）/ 音量 / 静音 / 旋转（竖横屏互转），可组合 | `input` 必填；`speed`/`volume`/`mute`/`rotate` 至少一个 |
 | `ffmpeg_health` | 自检 ffmpeg / ffprobe 可执行文件 | 无 |
 
@@ -64,7 +66,10 @@ ffmpeg_encode { input: E:\videos\raw.mp4, preset: bilibili-1080p }
 ffmpeg_subtitle { input: E:\videos\raw.mp4, subtitle: E:\videos\subs.srt }
 ffmpeg_extract { input: E:\videos\raw.webm, what: audio }
 ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
+ffmpeg_frames { input: E:\videos\raw.mp4, every: 5, format: jpg }
+ffmpeg_storyboard { input: E:\videos\raw.mp4, count: 12, columns: 4, width: 320 }
 ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
+ffmpeg_health {}
 ```
 
 ## 故障排查
@@ -84,7 +89,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 ## 安全设计
 
 - **无 shell**：所有参数以独立 argv 数组传递，用户输入不可能注入命令
-- **进程走 DSH 官方 subprocess 服务**：超时 AbortSignal 会真正触发树级终止（SIGTERM → 强杀，Windows taskkill /T），本插件零运行时依赖
+- **进程走 DSH 官方 subprocess 服务**：超时 AbortSignal 会真正触发树级终止（SIGTERM → 强杀，Windows taskkill /T），媒体处理不引入第三方转码库（仅依赖 `@stardustlc/dsh-updates` 提供更新控制）
 - **防覆写**：默认不覆盖同名文件（自动加序号），输出与输入相同直接拒绝
 - **超时钳制**：单次操作 10 秒 - 2 小时；探测额外限制 60 秒
 - **参数校验**：时间格式、预设枚举、crf/fps/scale 范围全部前置校验，输入目录、抽帧无扩展名输出等边界也有中文错误/自动修复
@@ -93,7 +98,7 @@ ffmpeg_adjust { input: E:\videos\raw.mp4, volume: +2dB }
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 124 个测试
+pnpm test       # 构建 + 125 个测试
 ```
 
 ## License

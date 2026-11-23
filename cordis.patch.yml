@@ -9,6 +9,7 @@
 #       # ffmpegPath: C:\tools\ffmpeg\bin\ffmpeg.exe   # 非 PATH 时显式指定
 #       # ffprobePath: C:\tools\ffmpeg\bin\ffprobe.exe
 #       timeoutMs: 300000                                # 单次操作超时（默认 5 分钟）
+#       # graceMs: 15000                                 # 超时终止宽限期（默认 15 秒，1000–120000 ms）
 #       # overwrite: true                                 # 允许覆盖同名输出（默认自动加后缀）
 #
 - insert:

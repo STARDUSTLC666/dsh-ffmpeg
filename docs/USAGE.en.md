@@ -37,6 +37,7 @@ Override the plugin row in your profile's `cordis.patch.yml` (defaults apply whe
     # ffmpegPath: C:\tools\ffmpeg\bin\ffmpeg.exe   # explicit path (or DSH_FFMPEG_PATH)
     # ffprobePath: C:\tools\ffmpeg\bin\ffprobe.exe # or DSH_FFPROBE_PATH
     timeoutMs: 300000                                # per-operation timeout (default 5 min, 10s - 2h)
+    # graceMs: 15000                                 # termination grace period (default 15s, 1000–120000 ms)
     # overwrite: true                                 # allow overwriting outputs (default auto-suffix _1/_2)
 ```
 
@@ -51,6 +52,10 @@ Override the plugin row in your profile's `cordis.patch.yml` (defaults apply whe
 | `ffmpeg_subtitle` | Burn subtitles (SRT/ASS hard subs) | `input` + `subtitle` required |
 | `ffmpeg_extract` | Extract audio (m4a; non-AAC is auto-transcoded to AAC) / frame sequences / single frame / subtitle stream | `input` + `what` required |
 | `ffmpeg_gif` | Video to high-quality GIF (two-pass palette) | `input` required; `fps`/`width`/`duration` optional |
+| `ffmpeg_frames` | Batch-extract frames for vision models (fixed interval or explicit timestamps, PNG/JPG) | `input` required; `every` or `times` (`maxFrames`/`outputDir`/`format` optional) |
+| `ffmpeg_storyboard` | Uniformly sample frames into one PNG contact sheet with per-cell target times | `input` required; `count`/`columns`/`width`/`start`/`end`/`output` optional |
+| `ffmpeg_adjust` | Adjust playback speed (audio+video synced), volume, mute, or clockwise rotation (90/180/270), combinable | `input` required; at least one of `speed`/`volume`/`mute`/`rotate` |
+| `ffmpeg_health` | Self-check local `ffmpeg` and `ffprobe` executables | None |
 
 ### Examples
 
@@ -61,6 +66,10 @@ ffmpeg_encode { input: E:\videos\raw.mp4, preset: bilibili-1080p }
 ffmpeg_subtitle { input: E:\videos\raw.mp4, subtitle: E:\videos\subs.srt }
 ffmpeg_extract { input: E:\videos\raw.webm, what: audio }
 ffmpeg_gif { input: E:\videos\raw.mp4, duration: 3, width: 480 }
+ffmpeg_frames { input: E:\videos\raw.mp4, every: 5, format: jpg }
+ffmpeg_storyboard { input: E:\videos\raw.mp4, count: 12, columns: 4, width: 320 }
+ffmpeg_adjust { input: E:\videos\raw.mp4, speed: 1.5, volume: +2dB }
+ffmpeg_health {}
 ```
 
 ## Troubleshooting
@@ -80,7 +89,7 @@ Run `ffmpeg_health` first: it probes ffmpeg and ffprobe separately, prints the e
 ## Safety
 
 - **No shell**: every argument is passed as its own argv element — user input cannot inject commands
-- **Runs on the official DSH subprocess service**: the timeout AbortSignal now really drives tree-scoped termination (SIGTERM → kill; taskkill /T on Windows), zero runtime dependencies
+- **Runs on the official DSH subprocess service**: the timeout AbortSignal now really drives tree-scoped termination (SIGTERM → kill; taskkill /T on Windows), with no third-party media runtime dependencies (only `@stardustlc/dsh-updates` for native update controls)
 - **No accidental overwrites**: existing outputs get auto-suffixed; output == input is rejected
 - **Timeout clamps**: per-operation 10s - 2h; probes additionally capped at 60s
 - **Input validation**: time formats, preset enums, crf/fps/scale ranges are validated up front; directory inputs are rejected and extension-less frame-sequence outputs are auto-fixed
@@ -89,7 +98,7 @@ Run `ffmpeg_health` first: it probes ffmpeg and ffprobe separately, prints the e
 
 ```bash
 pnpm install
-pnpm test       # build + 124 tests
+pnpm test       # build + 125 tests
 ```
 
 ## License

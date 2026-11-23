@@ -1,5 +1,11 @@
 # 更新记录
 
+## 0.7.21 (2026-11-23)
+
+- 修复 `ffmpeg_frames` 前置参数校验与异常目录清理：`times` 超限、非法时间点与 `every <= 0` 在创建 `outputDir` / `run-*` 子目录之前即被拦截，执行失败时自动清理新建空 `run-*` 目录，并补充回归测试。
+- 同步中英文文档、配置与注释：`docs/USAGE.en.md` 补全全部 11 个工具（新增 `ffmpeg_frames`、`ffmpeg_storyboard`、`ffmpeg_adjust`、`ffmpeg_health` 及示例），`docs/USAGE.md` 工具表补齐 `ffmpeg_storyboard`；补充 `graceMs` 配置项说明，校准依赖与工作区路径描述，更新 `docs/REFERENCE.{zh,en}.md` 语言切换链接与兼容更新说明。
+- Validate `ffmpeg_frames` inputs (`times`, timestamps, `every`) before creating `run-*` directories and clean up `run-*` on failure (with unit tests); complete all 11 tools and examples in `docs/USAGE.{md,en.md}`, document `graceMs`, align dependency/path docs and source comments, and fix `docs/REFERENCE.{zh,en}.md` language links and update wording.
+
 ## 0.7.20 (2026-11-20)
 
 - 升级共享更新组件至 0.2.10，移除跨插件右下角浮动提醒，保留工作台及插件详情页更新控制。

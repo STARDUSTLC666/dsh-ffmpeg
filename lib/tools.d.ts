@@ -1,5 +1,5 @@
 /**
- * 九个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif / frames / adjust。
+ * 十一个面向模型的视频工具：probe / cut / concat / encode / subtitle / extract / gif / frames / storyboard / adjust / health。
  * 直接调用 ctx.tools.register 注册【编译好的 JSON Schema】参数与 canonical 输出。
  *
  * @module dsh-ffmpeg/tools
@@ -44,7 +44,7 @@ export interface FfmpegToolDefinition {
 /** 生成一行人类可读的媒体摘要：容器、时长、主视频、帧率、码率、体积。 */
 export declare function buildProbeSummary(media: MediaInfo): string;
 /**
- * 构建七个工具定义。
+ * 构建十一个工具定义。
  * @param config - 已解析配置。
  * @param runner - 进程执行器（生产为 subprocess 服务封装，测试可注入假实现）。
  */

@@ -50,7 +50,7 @@ dsh plugin --profile desktop add dsh-ffmpeg
 
 ## 开始前要知道
 
-- 依赖本机已安装的 `ffmpeg` / `ffprobe`；输入与输出路径须位于允许访问的工作区内。
+- 依赖本机已安装的 `ffmpeg` / `ffprobe`；相对路径以当前会话工作区为基准（也支持准确本地绝对路径），默认绝不覆盖源文件。
 - 完整工具参数与排错见 [完整说明](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/REFERENCE.zh.md)。
 
 ## 插件更新

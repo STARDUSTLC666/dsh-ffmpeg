@@ -50,7 +50,7 @@ For the web profile, replace `desktop` with `web` and restart DSH. Requires DSH 
 
 ## Before you start
 
-- Requires local `ffmpeg` and `ffprobe` with access to workspace input/output paths.
+- Requires local `ffmpeg` and `ffprobe`; relative paths resolve against the current session workspace (exact local absolute paths are also supported), and source files are never overwritten by default.
 - Full configuration, tools, and troubleshooting: [full reference](https://github.com/STARDUSTLC666/dsh-ffmpeg/blob/master/docs/REFERENCE.en.md).
 
 ## Plugin updates

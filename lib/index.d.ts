@@ -1,10 +1,12 @@
 /**
  * dsh-ffmpeg —— 视频处理工具插件（node 半身，配置走 cordis.patch.yml）。
  *
- * 插件导出 apply(ctx, config)：把七个面向模型的工具（ffmpeg_probe / ffmpeg_cut /
- * ffmpeg_concat / ffmpeg_encode / ffmpeg_subtitle / ffmpeg_extract / ffmpeg_gif）注册进
+ * 插件导出 apply(ctx, config)：把十一个面向模型的工具（ffmpeg_probe / ffmpeg_cut /
+ * ffmpeg_concat / ffmpeg_encode / ffmpeg_subtitle / ffmpeg_extract / ffmpeg_gif /
+ * ffmpeg_frames / ffmpeg_storyboard / ffmpeg_adjust / ffmpeg_health）注册进
  * 宿主进程的工具注册表。进程执行走 DSH 官方 subprocess 服务（argv 数组、无 shell），
- * 零运行时依赖。配置缺失时插件照常加载，工具在 execute 时才抛出带中文指引的错误。
+ * 媒体处理无额外运行时依赖（仅依赖 @stardustlc/dsh-updates 提供更新控制）。
+ * 配置缺失时插件照常加载，工具在 execute 时才抛出带中文指引的错误。
  *
  * @module dsh-ffmpeg
  */
@@ -26,7 +28,7 @@ export interface FfmpegPluginContext {
     on?(event: string, listener: () => void): () => void;
 }
 /**
- * 插件入口：解析配置、封装 subprocess 执行器并注册七个视频工具。
+ * 插件入口：解析配置、封装 subprocess 执行器并注册十一个视频工具。
  * @param ctx - 宿主上下文（至少含 subprocess.spawn 与 tools.register）。
  * @param config - 插件配置（可缺省）。
  */
