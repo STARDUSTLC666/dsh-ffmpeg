@@ -1,6 +1,6 @@
 # 更新记录
 
-## Unreleased
+## 0.7.22 (2026-11-28)
 
 - 平均帧率为零或无效时，媒体探测改用有效的备用帧率，供分镜采样使用。
 - Use the reported fallback frame rate when the average is zero or invalid.
