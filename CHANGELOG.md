@@ -1,5 +1,10 @@
 # 更新记录
 
+## Unreleased
+
+- 平均帧率为零或无效时，媒体探测改用有效的备用帧率，供分镜采样使用。
+- Use the reported fallback frame rate when the average is zero or invalid.
+
 ## 0.7.21 (2026-11-23)
 
 - 修复 `ffmpeg_frames` 前置参数校验与异常目录清理：`times` 超限、非法时间点与 `every <= 0` 在创建 `outputDir` / `run-*` 子目录之前即被拦截，执行失败时自动清理新建空 `run-*` 目录，并补充回归测试。

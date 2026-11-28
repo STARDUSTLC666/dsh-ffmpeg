@@ -52,3 +52,14 @@ test('N/A 与缺失字段归一化为 null/默认', () => {
 test('非法 JSON 抛中文错误', () => {
   assert.throws(() => parseProbeJson('not json'), /ffprobe 输出解析失败/)
 })
+
+test('不可用的平均帧率回退到有效的 r_frame_rate，两者都无效时返回 null', () => {
+  const fps = (average, fallback) => parseProbeJson(JSON.stringify({
+    streams: [{ codec_type: 'video', avg_frame_rate: average, r_frame_rate: fallback }],
+  })).video.fps
+  for (const invalid of ['0/1', '0/0', '-1/2', '1/-2', '1e308/1e-308']) {
+    assert.equal(fps(invalid, '30000/1001'), 30000 / 1001)
+  }
+  assert.equal(fps('0/1', '0/1'), null)
+  assert.equal(fps('24/1', '30/1'), 24)
+})

@@ -65,7 +65,8 @@ function parseFps(value: unknown): number | null {
     if (parts.length === 2) {
       const top = Number(parts[0])
       const bottom = Number(parts[1])
-      if (Number.isFinite(top) && Number.isFinite(bottom) && bottom !== 0) return top / bottom
+      const fps = top / bottom
+      return top > 0 && bottom > 0 && Number.isFinite(fps) && fps > 0 ? fps : null
     }
     const parsed = Number(value)
     if (Number.isFinite(parsed) && parsed > 0) return parsed

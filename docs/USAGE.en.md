@@ -98,7 +98,7 @@ Run `ffmpeg_health` first: it probes ffmpeg and ffprobe separately, prints the e
 
 ```bash
 pnpm install
-pnpm test       # build + 125 tests
+pnpm test       # build + 126 tests
 ```
 
 ## License

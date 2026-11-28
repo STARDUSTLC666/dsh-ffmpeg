@@ -98,7 +98,7 @@ ffmpeg_health {}
 
 ```bash
 pnpm install
-pnpm test       # 构建 + 125 个测试
+pnpm test       # 构建 + 126 个测试
 ```
 
 ## License
